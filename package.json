@@ -18,7 +18,8 @@
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:cov": "jest --coverage",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "openapi:generate": "ts-node scripts/generate-openapi.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.0",
@@ -26,6 +27,7 @@
     "@nestjs/core": "^11.1.0",
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/platform-express": "^11.1.0",
+    "@nestjs/swagger": "^11.4.8",
     "@prisma/client": "^6.19.3",
     "argon2": "^0.45.2",
     "class-transformer": "^0.5.1",
@@ -38,6 +40,7 @@
     "pino-http": "^10.5.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
+    "swagger-ui-express": "^5.0.1",
     "zod": "^3.25.0"
   },
   "devDependencies": {
