@@ -12,6 +12,7 @@ import { PrismaModule } from './infra/prisma/prisma.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
+import { IngestionModule } from './modules/ingestion/ingestion.module';
 import { TaxonomiesModule } from './modules/taxonomies/taxonomies.module';
 import { UsersModule } from './modules/users/users.module';
 
@@ -47,6 +48,7 @@ import { UsersModule } from './modules/users/users.module';
     UsersModule,
     TaxonomiesModule,
     AdminModule,
+    IngestionModule,
   ],
   providers: [
     {
