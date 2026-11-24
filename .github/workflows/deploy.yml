@@ -1,0 +1,119 @@
+name: Build & Deploy (ARM64)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/alkok-be
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      short_sha: ${{ steps.meta.outputs.short_sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compute short SHA
+        id: meta
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          echo "short_sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push ARM64 image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:sha-${{ steps.meta.outputs.short_sha }}
+            ${{ env.IMAGE_NAME }}:latest
+
+  deploy-rpi:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Raspberry Pi via SSH
+        env:
+          RPI_HOST: ${{ secrets.RPI_HOST }}
+          RPI_USER: ${{ secrets.RPI_USER }}
+          RPI_SSH_KEY: ${{ secrets.RPI_SSH_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          NEW_TAG: sha-${{ needs.build-and-push.outputs.short_sha }}
+        run: |
+          if [ -z "$RPI_HOST" ] || [ -z "$RPI_USER" ] || [ -z "$RPI_SSH_KEY" ]; then
+            echo "RPI_HOST / RPI_USER / RPI_SSH_KEY secrets are not configured yet. Skipping SSH deploy."
+            exit 0
+          fi
+
+          mkdir -p ~/.ssh
+          printf '%s\n' "$RPI_SSH_KEY" > ~/.ssh/id_rpi
+          chmod 600 ~/.ssh/id_rpi
+          ssh-keyscan -H "$RPI_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+          set +e
+          ssh -i ~/.ssh/id_rpi -o StrictHostKeyChecking=accept-new "${RPI_USER}@${RPI_HOST}" "bash -s" <<EOF
+          set -euo pipefail
+          cd /home/dobbymin/project/alkok
+
+          PREV_TAG=\$(grep '^BE_IMAGE_TAG=' .env 2>/dev/null | cut -d= -f2- || echo "latest")
+          echo "\${PREV_TAG:-latest}" > .last_good_alkok-be
+
+          export BE_IMAGE_TAG="${NEW_TAG}"
+          docker compose -f docker-compose.prod.yml pull alkok-be
+          docker compose -f docker-compose.prod.yml run --rm alkok-be npx prisma migrate deploy
+          docker compose -f docker-compose.prod.yml up -d --no-deps alkok-be
+
+          HEALTH_OK=false
+          for i in \$(seq 1 15); do
+            if curl -fsS http://127.0.0.1:18102/api/health >/dev/null 2>&1; then
+              HEALTH_OK=true
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "\$HEALTH_OK" != "true" ]; then
+            ROLLBACK_TAG=\$(cat .last_good_alkok-be)
+            echo "Health check failed — rolling back to \${ROLLBACK_TAG}" >&2
+            export BE_IMAGE_TAG="\${ROLLBACK_TAG}"
+            docker compose -f docker-compose.prod.yml up -d --no-deps alkok-be
+            exit 1
+          fi
+
+          if grep -q '^BE_IMAGE_TAG=' .env 2>/dev/null; then
+            sed -i "s/^BE_IMAGE_TAG=.*/BE_IMAGE_TAG=${NEW_TAG}/" .env
+          else
+            echo "BE_IMAGE_TAG=${NEW_TAG}" >> .env
+          fi
+          EOF
+          SSH_STATUS=$?
+          set -e
+
+          if [ "$SSH_STATUS" -ne 0 ]; then
+            if [ -n "$DISCORD_WEBHOOK_URL" ]; then
+              curl -fsS -H "Content-Type: application/json" \
+                -d "{\"content\":\"[alkok-be] Deploy failed for tag ${NEW_TAG}; rolled back to previous good image.\"}" \
+                "$DISCORD_WEBHOOK_URL" || true
+            fi
+            exit 1
+          fi
