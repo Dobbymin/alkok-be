@@ -5,6 +5,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { EnvelopeInterceptor } from './common/interceptors/envelope.interceptor';
 import { validateEnv } from './config/env.schema';
+import { PrismaModule } from './infra/prisma/prisma.module';
 import { HealthModule } from './modules/health/health.module';
 
 @Module({
@@ -23,6 +24,7 @@ import { HealthModule } from './modules/health/health.module';
             : undefined,
       },
     }),
+    PrismaModule,
     HealthModule,
   ],
   providers: [

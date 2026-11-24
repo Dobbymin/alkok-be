@@ -12,6 +12,8 @@ concurrency:
 jobs:
   quality-gate:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://alkok:alkok@localhost:5432/alkok?schema=public
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,15 +30,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
-        run: pnpm lint
-
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Unit tests
-        run: pnpm test
-
       - name: Prisma validate & generate
         run: |
           if [ -f prisma/schema.prisma ]; then
@@ -45,6 +38,15 @@ jobs:
           else
             echo "prisma/schema.prisma not initialized yet — skipping"
           fi
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
 
       - name: Build
         run: pnpm build

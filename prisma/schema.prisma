@@ -1,0 +1,517 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+}
+
+enum ContentType {
+  GUIDE
+  TOOL
+  NEWS
+}
+
+enum PublishStatus {
+  DRAFT
+  IN_REVIEW
+  PUBLISHED
+  REJECTED
+  ARCHIVED
+}
+
+enum VerificationStatus {
+  VALID
+  NEEDS_REVIEW
+  EXPIRED
+}
+
+enum SourceType {
+  OFFICIAL
+  MEDIA
+  COMMUNITY
+}
+
+enum CategoryGroup {
+  WORK_DOMAIN
+  AI_USE
+}
+
+enum DifficultyLevel {
+  BEGINNER
+  PRACTICAL
+  ADVANCED
+}
+
+enum PricingModel {
+  FREE
+  FREEMIUM
+  PAID
+}
+
+enum ToolKind {
+  TOOL
+  MODEL
+}
+
+enum KoreanSupportLevel {
+  FULL
+  PARTIAL
+  NONE
+}
+
+enum ReportReason {
+  PRICING_CHANGED
+  BROKEN_LINK
+  CONTENT_ERROR
+  OUTDATED_OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  DISMISSED
+}
+
+enum VaultItemType {
+  INTERNAL_CONTENT
+  EXTERNAL_URL
+}
+
+enum JobType {
+  RSS_FETCH
+  URL_INGEST
+  AI_DRAFT
+  FRESHNESS_CHECK
+  TOKEN_CLEANUP
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  DEAD_LETTER
+}
+
+model User {
+  id              String     @id @db.Uuid
+  email           String     @unique
+  passwordHash    String     @map("password_hash")
+  nickname        String
+  role            UserRole   @default(USER)
+  status          UserStatus @default(PENDING_VERIFICATION)
+  emailVerifiedAt DateTime?  @map("email_verified_at") @db.Timestamptz(6)
+  lastLoginAt     DateTime?  @map("last_login_at") @db.Timestamptz(6)
+  deletedAt       DateTime?  @map("deleted_at") @db.Timestamptz(6)
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  interests               UserInterest[]
+  refreshSessions         RefreshSession[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens     PasswordResetToken[]
+  authoredContents        Content[]
+  helpfulVotes            HelpfulVote[]
+  submittedReports        ContentReport[]          @relation("ReporterUser")
+  resolvedReports         ContentReport[]          @relation("ResolvedByUser")
+  vaultFolders            VaultFolder[]
+  vaultTags               VaultTag[]
+  vaultItems              VaultItem[]
+
+  @@map("users")
+}
+
+model UserInterest {
+  userId     String   @map("user_id") @db.Uuid
+  categoryId String   @map("category_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([userId, categoryId])
+  @@map("user_interests")
+}
+
+model RefreshSession {
+  id        String    @id @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  familyId  String    @map("family_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  userAgent String?   @map("user_agent")
+  ipAddress String?   @map("ip_address")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([familyId])
+  @@map("refresh_sessions")
+}
+
+model EmailVerificationToken {
+  id        String    @id @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("email_verification_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("password_reset_tokens")
+}
+
+model Content {
+  id                 String                      @id @db.Uuid
+  type               ContentType
+  slug               String                      @unique
+  title              String
+  summary            String
+  publishStatus      PublishStatus               @default(DRAFT) @map("publish_status")
+  verificationStatus VerificationStatus          @default(VALID) @map("verification_status")
+  verifiedAt         DateTime?                   @map("verified_at") @db.Timestamptz(6)
+  publishedAt        DateTime?                   @map("published_at") @db.Timestamptz(6)
+  sourceType         SourceType                  @map("source_type")
+  sourceUrl          String                      @map("source_url")
+  sourceName         String?                     @map("source_name")
+  rawDocumentId      String?                     @unique @map("raw_document_id") @db.Uuid
+  authorId           String?                     @map("author_id") @db.Uuid
+  helpfulCount       Int                         @default(0) @map("helpful_count")
+  isFeatured         Boolean                     @default(false) @map("is_featured")
+  aiMetadata         Json?                       @map("ai_metadata")
+  searchVector       Unsupported("tsvector")?    @map("search_vector")
+  deletedAt          DateTime?                   @map("deleted_at") @db.Timestamptz(6)
+  createdAt          DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  rawDocument   RawDocument?      @relation(fields: [rawDocumentId], references: [id], onDelete: SetNull)
+  author        User?             @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  guideDetail   GuideDetail?
+  toolDetail    ToolDetail?
+  newsDetail    NewsDetail?
+  fromRelations ContentRelation[] @relation("FromContent")
+  toRelations   ContentRelation[] @relation("ToContent")
+  categories    ContentCategory[]
+  tags          ContentTag[]
+  helpfulVotes  HelpfulVote[]
+  reports       ContentReport[]
+  vaultItems    VaultItem[]
+
+  @@index([type, publishStatus, publishedAt(sort: Desc)])
+  @@index([publishStatus, verificationStatus, verifiedAt])
+  @@map("contents")
+}
+
+model GuideDetail {
+  contentId        String          @id @map("content_id") @db.Uuid
+  difficulty       DifficultyLevel
+  estimatedMinutes Int?            @map("estimated_minutes")
+  pricingModel     PricingModel    @map("pricing_model")
+  markdownBody     String          @map("markdown_body") @db.Text
+  prompts          Json            @default("[]")
+  cautions         String?         @db.Text
+  toc              Json?
+
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@map("guide_details")
+}
+
+model ToolDetail {
+  contentId      String             @id @map("content_id") @db.Uuid
+  toolKind       ToolKind           @map("tool_kind")
+  providerName   String             @map("provider_name")
+  officialUrl    String             @map("official_url")
+  isAffiliate    Boolean            @default(false) @map("is_affiliate")
+  affiliateUrl   String?            @map("affiliate_url")
+  pricingModel   PricingModel       @map("pricing_model")
+  hasFreePlan    Boolean            @default(false) @map("has_free_plan")
+  pricingSummary String             @map("pricing_summary")
+  pricingPlans   Json?              @map("pricing_plans")
+  koreanSupport  KoreanSupportLevel @map("korean_support")
+  platforms      String[]           @default([])
+  strengths      String[]           @default([])
+  limitations    String[]           @default([])
+
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([toolKind, hasFreePlan, koreanSupport])
+  @@map("tool_details")
+}
+
+model NewsDetail {
+  contentId           String    @id @map("content_id") @db.Uuid
+  keyPoints           String[]  @default([]) @map("key_points")
+  workImpact          String    @map("work_impact") @db.Text
+  originalPublishedAt DateTime? @map("original_published_at") @db.Timestamptz(6)
+
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@map("news_details")
+}
+
+model ContentRelation {
+  fromContentId String @map("from_content_id") @db.Uuid
+  toContentId   String @map("to_content_id") @db.Uuid
+  relationType  String @map("relation_type")
+  sortOrder     Int    @default(0) @map("sort_order")
+
+  fromContent Content @relation("FromContent", fields: [fromContentId], references: [id], onDelete: Cascade)
+  toContent   Content @relation("ToContent", fields: [toContentId], references: [id], onDelete: Cascade)
+
+  @@id([fromContentId, toContentId, relationType])
+  @@map("content_relations")
+}
+
+model Category {
+  id        String        @id @db.Uuid
+  group     CategoryGroup
+  slug      String        @unique
+  name      String
+  sortOrder Int           @default(0) @map("sort_order")
+  isActive  Boolean       @default(true) @map("is_active")
+
+  userInterests UserInterest[]
+  contents      ContentCategory[]
+
+  @@index([group, isActive, sortOrder])
+  @@map("categories")
+}
+
+model ContentCategory {
+  contentId  String @map("content_id") @db.Uuid
+  categoryId String @map("category_id") @db.Uuid
+
+  content  Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([contentId, categoryId])
+  @@map("content_categories")
+}
+
+model Tag {
+  id   String @id @db.Uuid
+  slug String @unique
+  name String
+
+  contents ContentTag[]
+
+  @@map("tags")
+}
+
+model ContentTag {
+  contentId String @map("content_id") @db.Uuid
+  tagId     String @map("tag_id") @db.Uuid
+
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([contentId, tagId])
+  @@map("content_tags")
+}
+
+model HelpfulVote {
+  userId    String   @map("user_id") @db.Uuid
+  contentId String   @map("content_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@id([userId, contentId])
+  @@map("helpful_votes")
+}
+
+model ContentReport {
+  id             String       @id @db.Uuid
+  contentId      String       @map("content_id") @db.Uuid
+  reporterUserId String?      @map("reporter_user_id") @db.Uuid
+  reporterEmail  String?      @map("reporter_email")
+  reason         ReportReason
+  detail         String       @db.Text
+  status         ReportStatus @default(OPEN)
+  resolutionMemo String?      @map("resolution_memo") @db.Text
+  reporterIpHash String       @map("reporter_ip_hash")
+  resolvedBy     String?      @map("resolved_by") @db.Uuid
+  resolvedAt     DateTime?    @map("resolved_at") @db.Timestamptz(6)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  content      Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  reporterUser User?   @relation("ReporterUser", fields: [reporterUserId], references: [id], onDelete: SetNull)
+  resolver     User?   @relation("ResolvedByUser", fields: [resolvedBy], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([contentId])
+  @@map("content_reports")
+}
+
+model VaultFolder {
+  id        String   @id @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  name      String
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items VaultItem[]
+
+  @@unique([userId, name])
+  @@map("vault_folders")
+}
+
+model VaultTag {
+  id        String   @id @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  name      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items VaultItemTag[]
+
+  @@unique([userId, name])
+  @@map("vault_tags")
+}
+
+model VaultItem {
+  id            String        @id @db.Uuid
+  userId        String        @map("user_id") @db.Uuid
+  itemType      VaultItemType @map("item_type")
+  contentId     String?       @map("content_id") @db.Uuid
+  folderId      String?       @map("folder_id") @db.Uuid
+  url           String?
+  normalizedUrl String?       @map("normalized_url")
+  title         String
+  description   String?       @db.Text
+  faviconUrl    String?       @map("favicon_url")
+  memo          String?       @db.Text
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content Content?       @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  folder  VaultFolder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  tags    VaultItemTag[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("vault_items")
+}
+
+model VaultItemTag {
+  vaultItemId String @map("vault_item_id") @db.Uuid
+  vaultTagId  String @map("vault_tag_id") @db.Uuid
+
+  vaultItem VaultItem @relation(fields: [vaultItemId], references: [id], onDelete: Cascade)
+  vaultTag  VaultTag  @relation(fields: [vaultTagId], references: [id], onDelete: Cascade)
+
+  @@id([vaultItemId, vaultTagId])
+  @@map("vault_item_tags")
+}
+
+model Source {
+  id                 String     @id @db.Uuid
+  name               String
+  feedUrl            String     @unique @map("feed_url")
+  sourceType         SourceType @map("source_type")
+  fetchIntervalHours Int        @default(12) @map("fetch_interval_hours")
+  isActive           Boolean    @default(true) @map("is_active")
+  lastFetchedAt      DateTime?  @map("last_fetched_at") @db.Timestamptz(6)
+  lastError          String?    @map("last_error") @db.Text
+  deletedAt          DateTime?  @map("deleted_at") @db.Timestamptz(6)
+  createdAt          DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  rawDocuments RawDocument[]
+
+  @@index([isActive, lastFetchedAt])
+  @@map("sources")
+}
+
+model RawDocument {
+  id            String    @id @db.Uuid
+  sourceId      String?   @map("source_id") @db.Uuid
+  url           String
+  normalizedUrl String    @unique @map("normalized_url")
+  title         String
+  rawText       String?   @map("raw_text") @db.Text
+  meta          Json?
+  publishedAt   DateTime? @map("published_at") @db.Timestamptz(6)
+  fetchedAt     DateTime  @default(now()) @map("fetched_at") @db.Timestamptz(6)
+
+  source  Source?  @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  content Content?
+
+  @@map("raw_documents")
+}
+
+model JobRun {
+  id           String    @id @db.Uuid
+  type         JobType
+  status       JobStatus @default(PENDING)
+  payload      Json      @default("{}")
+  attempts     Int       @default(0)
+  maxAttempts  Int       @default(3) @map("max_attempts")
+  nextRunAt    DateTime  @default(now()) @map("next_run_at") @db.Timestamptz(6)
+  lockedAt     DateTime? @map("locked_at") @db.Timestamptz(6)
+  startedAt    DateTime? @map("started_at") @db.Timestamptz(6)
+  finishedAt   DateTime? @map("finished_at") @db.Timestamptz(6)
+  durationMs   Int?      @map("duration_ms")
+  errorMessage String?   @map("error_message") @db.Text
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  aiUsageLogs AiUsageLog[]
+
+  @@index([status, nextRunAt])
+  @@map("job_runs")
+}
+
+model AiUsageLog {
+  id               String   @id @db.Uuid
+  jobRunId         String?  @map("job_run_id") @db.Uuid
+  provider         String
+  model            String
+  taskType         String   @map("task_type")
+  inputTokens      Int      @map("input_tokens")
+  outputTokens     Int      @map("output_tokens")
+  estimatedCostUsd Decimal  @map("estimated_cost_usd") @db.Decimal(10, 6)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  jobRun JobRun? @relation(fields: [jobRunId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([jobRunId])
+  @@map("ai_usage_logs")
+}
