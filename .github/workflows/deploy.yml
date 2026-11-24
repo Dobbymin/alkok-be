@@ -9,9 +9,6 @@ concurrency:
   group: deploy-prod
   cancel-in-progress: false
 
-env:
-  IMAGE_NAME: ${{ steps.meta.outputs.image_name }}
-
 jobs:
   build-and-push:
     runs-on: ubuntu-24.04-arm

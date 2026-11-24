@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { JwtModule } from '@nestjs/jwt';
 import { LoggerModule } from 'nestjs-pino';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { EnvelopeInterceptor } from './common/interceptors/envelope.interceptor';
+import { RateLimitModule } from './common/rate-limit/rate-limit.module';
 import { validateEnv } from './config/env.schema';
+import { MailModule } from './infra/mail/mail.module';
 import { PrismaModule } from './infra/prisma/prisma.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 
 @Module({
@@ -24,8 +28,19 @@ import { HealthModule } from './modules/health/health.module';
             : undefined,
       },
     }),
+    JwtModule.registerAsync({
+      global: true,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_ACCESS_SECRET'),
+        signOptions: { expiresIn: '15m' },
+      }),
+    }),
     PrismaModule,
+    RateLimitModule,
+    MailModule,
     HealthModule,
+    AuthModule,
   ],
   providers: [
     {
