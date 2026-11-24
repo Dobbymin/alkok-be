@@ -8,7 +8,9 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { EnvelopeInterceptor } from './common/interceptors/envelope.interceptor';
 import { RateLimitModule } from './common/rate-limit/rate-limit.module';
 import { validateEnv } from './config/env.schema';
+import { AiModule } from './infra/ai/ai.module';
 import { MailModule } from './infra/mail/mail.module';
+import { NotifyModule } from './infra/notify/notify.module';
 import { PrismaModule } from './infra/prisma/prisma.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -44,6 +46,8 @@ import { UsersModule } from './modules/users/users.module';
     }),
     PrismaModule,
     RateLimitModule,
+    NotifyModule,
+    AiModule,
     MailModule,
     HealthModule,
     AuthModule,
