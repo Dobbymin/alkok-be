@@ -1,0 +1,16 @@
+# Dependencies & build
+node_modules/
+dist/
+coverage/
+
+# Env & OS
+.env
+.env.*
+!.env.example
+.DS_Store
+
+# Local agent plugin symlinks / machine-local plugin pointers / runtime state
+.agents/skills/
+.agents/plugins.json
+.github-convention/state/
+.claude/settings.local.json
