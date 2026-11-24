@@ -4,8 +4,10 @@ import { AdminJobsController } from './admin-jobs.controller';
 import { AdminSourcesController } from './admin-sources.controller';
 import { AdminSourcesRepository } from './admin-sources.repository';
 import { AdminSourcesService } from './admin-sources.service';
+import { AiDraftService } from './ai-draft.service';
 import { HtmlExtractorService } from './html-extractor.service';
 import { JobWorkerService } from './job-worker.service';
+import { MaintenanceBatchService } from './maintenance-batch.service';
 import { RssFetcherService } from './rss-fetcher.service';
 
 @Module({
@@ -17,6 +19,8 @@ import { RssFetcherService } from './rss-fetcher.service';
     AdminSourcesRepository,
     JobWorkerService,
     RssFetcherService,
+    AiDraftService,
+    MaintenanceBatchService,
   ],
   exports: [
     SafeFetchService,
@@ -25,6 +29,8 @@ import { RssFetcherService } from './rss-fetcher.service';
     AdminSourcesRepository,
     JobWorkerService,
     RssFetcherService,
+    AiDraftService,
+    MaintenanceBatchService,
   ],
 })
 export class IngestionModule {}
