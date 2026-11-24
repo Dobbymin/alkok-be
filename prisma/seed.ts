@@ -1,8 +1,71 @@
-import { CategoryGroup, PrismaClient, UserRole, UserStatus } from '@prisma/client';
+import { CategoryGroup, PrismaClient, SourceType, UserRole, UserStatus } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { uuidv7 } from '../src/common/utils/uuidv7';
 
 const prisma = new PrismaClient();
+
+const WHITELIST_SOURCES = [
+  {
+    name: 'OpenAI News',
+    feedUrl: 'https://openai.com/news/rss.xml',
+    sourceType: SourceType.OFFICIAL,
+    fetchIntervalHours: 6,
+  },
+  {
+    name: 'Anthropic News',
+    feedUrl: 'https://www.anthropic.com/news/rss.xml',
+    sourceType: SourceType.OFFICIAL,
+    fetchIntervalHours: 6,
+  },
+  {
+    name: 'Google AI Blog',
+    feedUrl: 'https://blog.google/technology/ai/rss/',
+    sourceType: SourceType.OFFICIAL,
+    fetchIntervalHours: 6,
+  },
+  {
+    name: 'Google DeepMind Blog',
+    feedUrl: 'https://deepmind.google/blog/rss.xml',
+    sourceType: SourceType.OFFICIAL,
+    fetchIntervalHours: 12,
+  },
+  {
+    name: 'Microsoft AI Blog',
+    feedUrl: 'https://blogs.microsoft.com/ai/feed/',
+    sourceType: SourceType.OFFICIAL,
+    fetchIntervalHours: 12,
+  },
+  {
+    name: 'Hugging Face Blog',
+    feedUrl: 'https://huggingface.co/blog/feed.xml',
+    sourceType: SourceType.OFFICIAL,
+    fetchIntervalHours: 12,
+  },
+  {
+    name: 'Notion Releases',
+    feedUrl: 'https://www.notion.so/releases/rss.xml',
+    sourceType: SourceType.OFFICIAL,
+    fetchIntervalHours: 12,
+  },
+  {
+    name: 'Vercel Blog',
+    feedUrl: 'https://vercel.com/atom',
+    sourceType: SourceType.OFFICIAL,
+    fetchIntervalHours: 12,
+  },
+  {
+    name: 'GeekNews',
+    feedUrl: 'https://news.hada.io/rss/news',
+    sourceType: SourceType.COMMUNITY,
+    fetchIntervalHours: 12,
+  },
+  {
+    name: 'TechCrunch AI',
+    feedUrl: 'https://techcrunch.com/category/artificial-intelligence/feed/',
+    sourceType: SourceType.MEDIA,
+    fetchIntervalHours: 24,
+  },
+];
 
 const WORK_DOMAIN_CATEGORIES = [
   { slug: 'docs-reports', name: '문서·보고서', sortOrder: 1 },
@@ -87,6 +150,26 @@ export async function runSeed(client: PrismaClient = prisma): Promise<void> {
       emailVerifiedAt: new Date(),
     },
   });
+
+  for (const src of WHITELIST_SOURCES) {
+    await client.source.upsert({
+      where: { feedUrl: src.feedUrl },
+      update: {
+        name: src.name,
+        sourceType: src.sourceType,
+        fetchIntervalHours: src.fetchIntervalHours,
+        deletedAt: null,
+      },
+      create: {
+        id: uuidv7(),
+        name: src.name,
+        feedUrl: src.feedUrl,
+        sourceType: src.sourceType,
+        fetchIntervalHours: src.fetchIntervalHours,
+        isActive: true,
+      },
+    });
+  }
 }
 
 if (require.main === module) {
