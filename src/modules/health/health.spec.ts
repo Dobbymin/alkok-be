@@ -27,10 +27,14 @@ describe('Health & Common Infra', () => {
 
   beforeAll(async () => {
     process.env.NODE_ENV = 'test';
+    process.env.SKIP_DB_CONNECT = 'true';
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
       controllers: [TestValidationController],
-    }).compile();
+    })
+      .overrideProvider(DB_HEALTH_CHECKER)
+      .useValue({ ping: () => Promise.resolve('up') })
+      .compile();
 
     app = moduleRef.createNestApplication();
     configureApp(app);
