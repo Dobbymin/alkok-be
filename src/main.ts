@@ -1,13 +1,28 @@
-import { HttpStatus, RequestMethod, ValidationPipe } from '@nestjs/common';
+import { HttpStatus, type INestApplication, RequestMethod, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, type OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { AppException } from './common/exceptions/app.exception';
 
-export function configureApp(app: import('@nestjs/common').INestApplication): void {
+export function buildSwaggerDocument(app: INestApplication): OpenAPIObject {
+  const config = new DocumentBuilder()
+    .setTitle('Alkok API')
+    .setDescription('알콕(Alkok) 백엔드 REST API 계약 명세')
+    .setVersion('1.0.0')
+    .addBearerAuth()
+    .addCookieAuth('alkok_rt')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  document.openapi = '3.1.0';
+  return document;
+}
+
+export function configureApp(app: INestApplication): void {
   const configService = app.get(ConfigService);
   const corsOriginsRaw = configService.get<string>('CORS_ORIGINS') ?? '';
   const allowedOrigins = corsOriginsRaw
@@ -44,6 +59,13 @@ export function configureApp(app: import('@nestjs/common').INestApplication): vo
       },
     }),
   );
+
+  if (configService.get<string>('NODE_ENV') !== 'production') {
+    const document = buildSwaggerDocument(app);
+    SwaggerModule.setup('api-docs', app, document, {
+      jsonDocumentUrl: 'api-docs-json',
+    });
+  }
 }
 
 async function bootstrap(): Promise<void> {

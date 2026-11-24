@@ -9,8 +9,10 @@ import { RateLimitModule } from './common/rate-limit/rate-limit.module';
 import { validateEnv } from './config/env.schema';
 import { MailModule } from './infra/mail/mail.module';
 import { PrismaModule } from './infra/prisma/prisma.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
+import { TaxonomiesModule } from './modules/taxonomies/taxonomies.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
@@ -43,6 +45,8 @@ import { UsersModule } from './modules/users/users.module';
     HealthModule,
     AuthModule,
     UsersModule,
+    TaxonomiesModule,
+    AdminModule,
   ],
   providers: [
     {
