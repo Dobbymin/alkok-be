@@ -27,3 +27,23 @@ Copy `deploy/nginx/alkok.dobbymin.cloud.conf` to `/etc/nginx/conf.d/alkok.dobbym
 ```bash
 sudo nginx -t && sudo systemctl reload nginx
 ```
+
+## 4. Daily DB Backup & Cloudflare R2 Offsite Sync (`backup-db.sh`)
+
+`deploy/scripts/backup-db.sh` creates a custom-format PostgreSQL dump (`alkok-YYYYMMDD.dump`), verifies archive integrity with `pg_restore --list`, prunes local dumps older than 7 days, uploads to Cloudflare R2 via `rclone copy`, and sends a Discord alert if any stage fails.
+
+### RPi Cron Setup (Daily 04:00 KST)
+
+1. Configure an `rclone` remote (e.g. `r2`) pointing to your Cloudflare R2 bucket with a **30-day object lifecycle rule**.
+2. Register the cron job (`crontab -e`):
+
+```cron
+0 4 * * * POSTGRES_CONTAINER=alkok-postgres POSTGRES_USER=alkok POSTGRES_DB=alkok RCLONE_REMOTE=r2:alkok-backups DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/..." /home/dobbymin/project/alkok/scripts/backup-db.sh >> /home/dobbymin/backups/alkok/backup.log 2>&1
+```
+
+## 5. Restore Rehearsal (`rehearse-restore.sh`)
+
+Run `./deploy/scripts/rehearse-restore.sh` to verify `pg_dump` → `pg_restore --list` → ephemeral `postgres:17-alpine` restore → table count validation (`contents >= 42`, `categories >= 11`, `users >= 1`, `sources >= 10`) and measure RTO.
+
+- **Latest Local Rehearsal Result**: `contents=42`, `categories=11`, `users=1`, `sources=10`, **Measured RTO = 7s** (< 3600s target).
+- **Note**: Live Cloudflare R2 upload (`rclone copy`) and Discord webhook delivery depend on RPi host `rclone` config and `DISCORD_WEBHOOK_URL` secret.
