@@ -15,6 +15,7 @@ import { PrismaModule } from './infra/prisma/prisma.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ContentsModule } from './modules/contents/contents.module';
+import { EngagementModule } from './modules/engagement/engagement.module';
 import { HealthModule } from './modules/health/health.module';
 import { IngestionModule } from './modules/ingestion/ingestion.module';
 import { SearchModule } from './modules/search/search.module';
@@ -61,6 +62,7 @@ import { VaultModule } from './modules/vault/vault.module';
     ContentsModule,
     SearchModule,
     VaultModule,
+    EngagementModule,
   ],
   providers: [
     {
