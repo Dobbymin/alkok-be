@@ -141,3 +141,8 @@ export class UpdateVaultFolderDto {
   @Min(0)
   sortOrder?: number;
 }
+
+export class PreviewUrlDto {
+  @IsUrl({ protocols: ['http', 'https'], require_protocol: true })
+  url!: string;
+}
