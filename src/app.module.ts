@@ -20,6 +20,7 @@ import { IngestionModule } from './modules/ingestion/ingestion.module';
 import { SearchModule } from './modules/search/search.module';
 import { TaxonomiesModule } from './modules/taxonomies/taxonomies.module';
 import { UsersModule } from './modules/users/users.module';
+import { VaultModule } from './modules/vault/vault.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { UsersModule } from './modules/users/users.module';
     IngestionModule,
     ContentsModule,
     SearchModule,
+    VaultModule,
   ],
   providers: [
     {
