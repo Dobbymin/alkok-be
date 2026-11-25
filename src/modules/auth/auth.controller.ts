@@ -99,6 +99,14 @@ export class AuthController {
       path: '/api/v1/auth',
       maxAge: 14 * 24 * 60 * 60 * 1000,
     });
+    // Non-sensitive session-presence hint for cross-app SPA bootstrap (/ and /admin)
+    res.cookie('alkok_logged_in', '1', {
+      httpOnly: false,
+      secure: isProd,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 14 * 24 * 60 * 60 * 1000,
+    });
   }
 
   private clearRefreshCookie(res: Response): void {
@@ -108,6 +116,12 @@ export class AuthController {
       secure: isProd,
       sameSite: 'lax',
       path: '/api/v1/auth',
+    });
+    res.clearCookie('alkok_logged_in', {
+      httpOnly: false,
+      secure: isProd,
+      sameSite: 'lax',
+      path: '/',
     });
   }
 }
