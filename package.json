@@ -19,7 +19,8 @@
     "test": "jest",
     "test:cov": "jest --coverage",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "openapi:generate": "ts-node scripts/generate-openapi.ts"
+    "openapi:generate": "ts-node scripts/generate-openapi.ts",
+    "check:links": "node scripts/check-seed-links.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.0",

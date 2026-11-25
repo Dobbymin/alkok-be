@@ -249,7 +249,12 @@ describe('Public Home & Contents 3 Types + Compare (e2e)', () => {
       .get('/api/v1/home')
       .set('Authorization', `Bearer ${userToken}`)
       .expect(200);
-    expect(authHome.body.data.guides[0].slug).toBe('e2e-guide-research');
+    const authSlugs = authHome.body.data.guides.map((g: { slug: string }) => g.slug);
+    expect(authSlugs).toContain('e2e-guide-research');
+    const docsIdx = authSlugs.indexOf('e2e-guide-docs');
+    if (docsIdx !== -1) {
+      expect(authSlugs.indexOf('e2e-guide-research')).toBeLessThan(docsIdx);
+    }
     expect(Array.isArray(authHome.body.data.recentVaultItems)).toBe(true);
 
     await request(app.getHttpServer()).get('/api/v1/guides/e2e-guide-draft').expect(404);

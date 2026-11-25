@@ -1,6 +1,7 @@
 import { CategoryGroup, PrismaClient, SourceType, UserRole, UserStatus } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { uuidv7 } from '../src/common/utils/uuidv7';
+import { seedContents } from './seeds/contents-seed';
 
 const prisma = new PrismaClient();
 
@@ -170,6 +171,8 @@ export async function runSeed(client: PrismaClient = prisma): Promise<void> {
       },
     });
   }
+
+  await seedContents(client);
 }
 
 if (require.main === module) {
