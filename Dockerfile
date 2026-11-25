@@ -17,8 +17,9 @@ RUN pnpm build
 
 FROM base AS prod-deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN pnpm install --prod --frozen-lockfile
-COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
+COPY prisma/schema.prisma ./prisma/schema.prisma
+RUN pnpm install --prod --frozen-lockfile && \
+    npx --yes prisma@6.19.3 generate
 
 FROM base AS runner
 ENV NODE_ENV=production
