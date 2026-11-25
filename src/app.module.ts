@@ -17,6 +17,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ContentsModule } from './modules/contents/contents.module';
 import { HealthModule } from './modules/health/health.module';
 import { IngestionModule } from './modules/ingestion/ingestion.module';
+import { SearchModule } from './modules/search/search.module';
 import { TaxonomiesModule } from './modules/taxonomies/taxonomies.module';
 import { UsersModule } from './modules/users/users.module';
 
@@ -57,6 +58,7 @@ import { UsersModule } from './modules/users/users.module';
     AdminModule,
     IngestionModule,
     ContentsModule,
+    SearchModule,
   ],
   providers: [
     {
