@@ -18,10 +18,12 @@ import {
   CreateBookmarkDto,
   CreateExternalUrlDto,
   CreateVaultFolderDto,
+  PreviewUrlDto,
   UpdateVaultFolderDto,
   UpdateVaultItemDto,
   VaultItemsQueryDto,
 } from './vault.dto';
+import { VaultPreviewService } from './vault-preview.service';
 import { VaultService } from './vault.service';
 
 @ApiTags('vault')
@@ -29,7 +31,20 @@ import { VaultService } from './vault.service';
 @Controller('vault')
 @UseGuards(JwtAuthGuard)
 export class VaultController {
-  constructor(private readonly vaultService: VaultService) {}
+  constructor(
+    private readonly vaultService: VaultService,
+    private readonly vaultPreviewService: VaultPreviewService,
+  ) {}
+
+  @Post('preview-url')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    operationId: 'previewVaultUrl',
+    summary: '외부 URL OG 메타 파싱 (SSRF 방어 + Fallback)',
+  })
+  previewUrl(@CurrentUser() user: AuthUser, @Body() dto: PreviewUrlDto) {
+    return this.vaultPreviewService.previewUrl(user.id, dto.url);
+  }
 
   @Get('items')
   @ApiOperation({ operationId: 'listVaultItems', summary: '보관함 항목 목록' })
