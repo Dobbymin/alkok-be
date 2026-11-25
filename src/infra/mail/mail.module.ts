@@ -1,5 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ConsoleMailProvider } from './console-mail.provider';
 import { MAIL_PROVIDER } from './mail.interface';
 import { MailpitMailProvider } from './mailpit-mail.provider';
 import { ResendMailProvider } from './resend-mail.provider';
@@ -7,18 +8,26 @@ import { ResendMailProvider } from './resend-mail.provider';
 @Global()
 @Module({
   providers: [
+    ConsoleMailProvider,
     MailpitMailProvider,
     ResendMailProvider,
     {
       provide: MAIL_PROVIDER,
-      inject: [ConfigService, MailpitMailProvider, ResendMailProvider],
+      inject: [ConfigService, ConsoleMailProvider, MailpitMailProvider, ResendMailProvider],
       useFactory: (
         configService: ConfigService,
+        consoleProvider: ConsoleMailProvider,
         mailpit: MailpitMailProvider,
         resend: ResendMailProvider,
       ) => {
         const provider = configService.get<string>('MAIL_PROVIDER');
-        return provider === 'resend' ? resend : mailpit;
+        if (provider === 'resend') {
+          return resend;
+        }
+        if (provider === 'console') {
+          return consoleProvider;
+        }
+        return mailpit;
       },
     },
   ],

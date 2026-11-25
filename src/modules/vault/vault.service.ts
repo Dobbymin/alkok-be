@@ -1,9 +1,10 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Optional } from '@nestjs/common';
 import { VaultItemType } from '@prisma/client';
 import { buildPaginationMeta } from '../../common/dto/pagination.dto';
 import { AppException } from '../../common/exceptions/app.exception';
 import { mapContentSummary } from '../../common/utils/content-mapper.util';
 import { normalizeUrl } from '../../common/utils/normalize-url';
+import { SafeFetchService } from '../../common/utils/safe-fetch';
 import type {
   CreateBookmarkDto,
   CreateExternalUrlDto,
@@ -18,7 +19,10 @@ type VaultItemRow = Awaited<ReturnType<VaultRepository['listItems']>>['items'][n
 
 @Injectable()
 export class VaultService {
-  constructor(private readonly vaultRepository: VaultRepository) {}
+  constructor(
+    private readonly vaultRepository: VaultRepository,
+    @Optional() private readonly safeFetchService?: SafeFetchService,
+  ) {}
 
   async listItems(userId: string, query: VaultItemsQueryDto) {
     const result = await this.vaultRepository.listItems(userId, query);
@@ -67,6 +71,17 @@ export class VaultService {
 
   async createExternalUrl(userId: string, dto: CreateExternalUrlDto) {
     const normalizedUrl = normalizeUrl(dto.url);
+
+    if (this.safeFetchService) {
+      try {
+        await this.safeFetchService.assertSafeUrl(normalizedUrl);
+      } catch (err) {
+        if (err instanceof AppException && err.errorCode === 'SSRF_BLOCKED_URL') {
+          throw err;
+        }
+        // Allow manual saving even when DNS lookup fails for offline/transient domains
+      }
+    }
 
     if (dto.folderId) {
       await this.assertFolderOwnership(userId, dto.folderId);

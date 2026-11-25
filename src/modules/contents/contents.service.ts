@@ -114,7 +114,25 @@ export class ContentsService {
       estimatedMinutes: guide.guideDetail?.estimatedMinutes ?? null,
       pricingModel: guide.guideDetail?.pricingModel ?? 'FREEMIUM',
       markdownBody: guide.guideDetail?.markdownBody ?? '',
-      prompts: Array.isArray(guide.guideDetail?.prompts) ? guide.guideDetail.prompts : [],
+      prompts: Array.isArray(guide.guideDetail?.prompts)
+        ? guide.guideDetail.prompts.map((item) => {
+            if (typeof item === 'object' && item !== null) {
+              const p = item as Record<string, unknown>;
+              const content =
+                typeof p.content === 'string'
+                  ? p.content
+                  : typeof p.prompt === 'string'
+                    ? p.prompt
+                    : '';
+              return {
+                ...p,
+                content,
+                variables: Array.isArray(p.variables) ? p.variables : [],
+              };
+            }
+            return item;
+          })
+        : [],
       cautions: guide.guideDetail?.cautions ?? null,
       toc: Array.isArray(guide.guideDetail?.toc) ? guide.guideDetail.toc : [],
       recommendedTools: recommendedTools.map((t) => this.mapToolDetail(t, flags)),
