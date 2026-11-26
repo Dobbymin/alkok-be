@@ -21,6 +21,12 @@ import {
   type NewsDraft,
   type ToolDraft,
 } from './ai-draft.schemas';
+import {
+  AGENT_MCP_PRIMARY_TAG,
+  buildPass1SystemPrompt,
+  buildPass2SystemPrompt,
+  isAgentOrMcpTopic,
+} from './agent-mcp-prompts';
 import { JobWorkerService } from './job-worker.service';
 
 @Injectable()
@@ -72,6 +78,12 @@ export class AiDraftService implements OnModuleInit {
     const sourceType = rawDoc.source?.sourceType ?? SourceType.OFFICIAL;
     const sourceName = rawDoc.source?.name ?? null;
     const isManual = options.skipScreening === true;
+    const isAgentMcp = isAgentOrMcpTopic({
+      title: rawDoc.title,
+      url: rawDoc.url,
+      rawText: rawDoc.rawText,
+      sourceName,
+    });
 
     let targetType: ContentType = ContentType.NEWS;
     let initialDomains: string[] = [];
@@ -81,8 +93,7 @@ export class AiDraftService implements OnModuleInit {
     if (!isManual) {
       const screenRes = await this.generateWithOneRetry(
         {
-          systemPrompt:
-            '당신은 실무 직장인을 위한 AI 지식 큐레이터입니다. 원문의 유용성을 1~5점으로 평가하고 JSON으로 반환하세요.',
+          systemPrompt: buildPass1SystemPrompt(isAgentMcp),
           userPrompt: JSON.stringify({
             title: rawDoc.title,
             sourceType,
@@ -126,28 +137,14 @@ export class AiDraftService implements OnModuleInit {
           ? GuideDraftSchema
           : NewsDraftSchema;
 
-    const guideRules =
-      targetType === ContentType.GUIDE
-        ? [
-            'GUIDE 작성 필수 규칙:',
-            '1. prompts에는 복붙 가능한 {{변수}} 템플릿과 variables[], variableExamples(변수별 입력 예시), expectedOutput, tips를 포함하세요.',
-            '2. beforeAfterExamples에는 최소 1~2건의 실제 업무 입력 샘플(beforeInput) -> AI 출력 결과 요약(afterOutput)과 improvementPoints[]를 포함하세요.',
-            '3. commonMistakes에는 최소 2~3건의 실무 실패 사례(category: SECURITY | HALLUCINATION | FREE_LIMIT | WORKFLOW 중 선택, mistake, prevention)를 포함하세요.',
-          ].join('\n')
-        : null;
-
     const draft = await this.generateWithOneRetry(
       {
-        systemPrompt: [
-          `당신은 한국 실무 직장인을 위한 AI 지식 편집자입니다. 유형(${targetType})에 맞는 한국어 초안 JSON을 작성하세요.`,
-          '원문에 없는 가격, 무료 한도, 출시일, 한국어 지원 여부는 추측하지 말고 "[확인 필요]"로 표기한 뒤 unverifiedFields에 필드명을 기록하세요.',
-          '원문 핵심 근거 2~3줄을 evidenceNotes에 포함하세요.',
-          ...(guideRules ? [guideRules] : []),
-        ].join('\n'),
+        systemPrompt: buildPass2SystemPrompt(targetType, isAgentMcp),
         userPrompt: JSON.stringify({
           type: targetType,
           title: rawDoc.title,
           url: rawDoc.url,
+          isAgentMcpTopic: isAgentMcp,
           suggestedDomains: initialDomains,
           suggestedUses: initialUses,
           suggestedTags: initialTags,
@@ -174,7 +171,11 @@ export class AiDraftService implements OnModuleInit {
       ]),
     ];
     const tagSlugs = [
-      ...new Set([...initialTags, ...(draft.tags ?? [])].map(slugify).filter(Boolean)),
+      ...new Set(
+        [...initialTags, ...(draft.tags ?? []), ...(isAgentMcp ? [AGENT_MCP_PRIMARY_TAG] : [])]
+          .map(slugify)
+          .filter(Boolean),
+      ),
     ];
 
     await this.prisma.$transaction(async (tx) => {
@@ -194,6 +195,7 @@ export class AiDraftService implements OnModuleInit {
           aiMetadata: {
             evidenceNotes: draft.evidenceNotes,
             unverifiedFields: draft.unverifiedFields,
+            ...(isAgentMcp ? { topicTrack: 'agent-skills-mcp' } : {}),
           },
         },
       });
