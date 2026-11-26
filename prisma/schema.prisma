@@ -236,14 +236,16 @@ model Content {
 }
 
 model GuideDetail {
-  contentId        String          @id @map("content_id") @db.Uuid
-  difficulty       DifficultyLevel
-  estimatedMinutes Int?            @map("estimated_minutes")
-  pricingModel     PricingModel    @map("pricing_model")
-  markdownBody     String          @map("markdown_body") @db.Text
-  prompts          Json            @default("[]")
-  cautions         String?         @db.Text
-  toc              Json?
+  contentId           String          @id @map("content_id") @db.Uuid
+  difficulty          DifficultyLevel
+  estimatedMinutes    Int?            @map("estimated_minutes")
+  pricingModel        PricingModel    @map("pricing_model")
+  markdownBody        String          @map("markdown_body") @db.Text
+  prompts             Json            @default("[]")
+  beforeAfterExamples Json            @default("[]") @map("before_after_examples")
+  commonMistakes      Json            @default("[]") @map("common_mistakes")
+  cautions            String?         @db.Text
+  toc                 Json?
 
   content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
 

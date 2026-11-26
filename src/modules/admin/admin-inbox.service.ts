@@ -87,6 +87,13 @@ export class AdminInboxService {
       workImpact: content.newsDetail?.workImpact ?? null,
       keyPoints: content.newsDetail?.keyPoints ?? [],
       markdownBody: content.guideDetail?.markdownBody ?? null,
+      prompts: Array.isArray(content.guideDetail?.prompts) ? content.guideDetail.prompts : [],
+      beforeAfterExamples: Array.isArray(content.guideDetail?.beforeAfterExamples)
+        ? content.guideDetail.beforeAfterExamples
+        : [],
+      commonMistakes: Array.isArray(content.guideDetail?.commonMistakes)
+        ? content.guideDetail.commonMistakes
+        : [],
       pricingSummary: content.toolDetail?.pricingSummary ?? null,
       createdAt: content.createdAt.toISOString(),
     };
@@ -123,10 +130,39 @@ export class AdminInboxService {
           where: { contentId: id },
           data: { workImpact: dto.workImpact },
         });
-      } else if (existing.type === ContentType.GUIDE && dto.markdownBody !== undefined) {
+      } else if (
+        existing.type === ContentType.GUIDE &&
+        (dto.markdownBody !== undefined ||
+          dto.beforeAfterExamples !== undefined ||
+          dto.commonMistakes !== undefined)
+      ) {
         await tx.guideDetail.updateMany({
           where: { contentId: id },
-          data: { markdownBody: dto.markdownBody },
+          data: {
+            ...(dto.markdownBody !== undefined ? { markdownBody: dto.markdownBody } : {}),
+            ...(dto.beforeAfterExamples !== undefined
+              ? {
+                  beforeAfterExamples: dto.beforeAfterExamples.map((e) => ({
+                    id: e.id || uuidv7(),
+                    title: e.title,
+                    beforeInput: e.beforeInput,
+                    afterOutput: e.afterOutput,
+                    improvementPoints: e.improvementPoints ?? [],
+                  })),
+                }
+              : {}),
+            ...(dto.commonMistakes !== undefined
+              ? {
+                  commonMistakes: dto.commonMistakes.map((m) => ({
+                    id: m.id || uuidv7(),
+                    category: m.category,
+                    title: m.title,
+                    mistake: m.mistake,
+                    prevention: m.prevention,
+                  })),
+                }
+              : {}),
+          },
         });
       } else if (existing.type === ContentType.TOOL && dto.pricingSummary !== undefined) {
         await tx.toolDetail.updateMany({

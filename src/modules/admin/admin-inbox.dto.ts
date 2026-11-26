@@ -1,4 +1,6 @@
-import { IsArray, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { GuideBeforeAfterExampleInputDto, GuideCommonMistakeInputDto } from './admin-contents.dto';
 
 export class ApproveInboxDto {
   @IsOptional()
@@ -21,6 +23,18 @@ export class ApproveInboxDto {
   @IsOptional()
   @IsString()
   markdownBody?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GuideBeforeAfterExampleInputDto)
+  beforeAfterExamples?: GuideBeforeAfterExampleInputDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GuideCommonMistakeInputDto)
+  commonMistakes?: GuideCommonMistakeInputDto[];
 
   @IsOptional()
   @IsString()

@@ -1,8 +1,8 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, type AuthUser } from '../../common/decorators/current-user.decorator';
 import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
-import { GuideListQueryDto } from './contents.dto';
+import { GuideDetailEnvelopeResponseDto, GuideListQueryDto } from './contents.dto';
 import { ContentsService } from './contents.service';
 
 @ApiTags('guides')
@@ -20,6 +20,7 @@ export class GuidesController {
   @Get(':slug')
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ operationId: 'getGuideBySlug', summary: '업무 활용 가이드 상세' })
+  @ApiOkResponse({ type: GuideDetailEnvelopeResponseDto })
   getBySlug(@Param('slug') slug: string, @CurrentUser() user?: AuthUser) {
     return this.contentsService.getGuideBySlug(slug, user?.id);
   }

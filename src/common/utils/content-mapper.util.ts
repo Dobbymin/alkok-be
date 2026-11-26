@@ -50,6 +50,8 @@ export interface ContentWithRelations {
     pricingModel: string;
     markdownBody: string;
     prompts: unknown;
+    beforeAfterExamples?: unknown;
+    commonMistakes?: unknown;
     cautions: string | null;
     toc: unknown;
   } | null;

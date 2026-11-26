@@ -166,7 +166,33 @@ describe('Public Home & Contents 3 Types + Compare (e2e)', () => {
           difficulty: DifficultyLevel.BEGINNER,
           pricingModel: PricingModel.FREE,
           markdownBody: '본문 1',
-          prompts: [{ id: 'p1', title: '프롬프트', content: '내용', variables: [] }],
+          prompts: [
+            {
+              id: 'p1',
+              title: '프롬프트',
+              content: '내용',
+              variables: ['대상'],
+              variableExamples: { 대상: '주간 보고서' },
+            },
+          ],
+          beforeAfterExamples: [
+            {
+              id: 'ba-1',
+              title: 'Before/After 예시',
+              beforeInput: '원본 메모',
+              afterOutput: '구조화 보고서',
+              improvementPoints: ['명확한 섹션 분리'],
+            },
+          ],
+          commonMistakes: [
+            {
+              id: 'cm-1',
+              category: 'SECURITY',
+              title: '기밀 유출 주의',
+              mistake: '실명 입력',
+              prevention: '익명화 처리',
+            },
+          ],
         },
         {
           contentId: g2Id,
@@ -265,6 +291,15 @@ describe('Public Home & Contents 3 Types + Compare (e2e)', () => {
       .get('/api/v1/guides/e2e-guide-docs')
       .expect(200);
     expect(guideRes.body.data.recommendedTools).toHaveLength(1);
+    expect(guideRes.body.data.beforeAfterExamples).toHaveLength(1);
+    expect(guideRes.body.data.commonMistakes).toHaveLength(1);
+    expect(guideRes.body.data.prompts[0].variableExamples).toEqual({ 대상: '주간 보고서' });
+
+    const legacyGuideRes = await request(app.getHttpServer())
+      .get('/api/v1/guides/e2e-guide-research')
+      .expect(200);
+    expect(legacyGuideRes.body.data.beforeAfterExamples).toEqual([]);
+    expect(legacyGuideRes.body.data.commonMistakes).toEqual([]);
 
     const compareRes = await request(app.getHttpServer())
       .get('/api/v1/tools/compare?slugs=e2e-tool-a,e2e-tool-b')

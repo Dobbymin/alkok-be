@@ -51,10 +51,25 @@ interface SeedGuideInput {
   prompts: Array<{
     id: string;
     title: string;
-    prompt: string;
+    content: string;
     variables?: string[];
+    variableExamples?: Record<string, string>;
     expectedOutput?: string;
     tips?: string;
+  }>;
+  beforeAfterExamples?: Array<{
+    id: string;
+    title: string;
+    beforeInput: string;
+    afterOutput: string;
+    improvementPoints: string[];
+  }>;
+  commonMistakes?: Array<{
+    id: string;
+    category: 'SECURITY' | 'HALLUCINATION' | 'FREE_LIMIT' | 'WORKFLOW';
+    title: string;
+    mistake: string;
+    prevention: string;
   }>;
   cautions: string;
   toc: Array<{ id: string; text: string; level: number }>;
@@ -512,10 +527,39 @@ const SEED_GUIDES: SeedGuideInput[] = [
       {
         id: 'weekly-report-1',
         title: '주간 업무 보고서 구조화 프롬프트',
-        prompt: '당신은 {{직무}} 팀의 실무자입니다. 아래 이번 주 업무 메모를 바탕으로 팀장 보고용 주간 보고서를 작성하세요.\n\n[작성 규칙]\n1. 섹션: 1) 이번 주 핵심 성과(3줄 이내) 2) 업무별 진행 현황 3) 이슈 및 리스크 4) 다음 주 계획\n2. 개조식(~함, ~완료)으로 간결하게 작성\n3. 메모에 없는 수치나 일정은 절대 추측하지 말고 [확인 필요]로 표시\n\n[업무 메모]\n{{업무_메모_붙여넣기}}',
+        content: '당신은 {{직무}} 팀의 실무자입니다. 아래 이번 주 업무 메모를 바탕으로 팀장 보고용 주간 보고서를 작성하세요.\n\n[작성 규칙]\n1. 섹션: 1) 이번 주 핵심 성과(3줄 이내) 2) 업무별 진행 현황 3) 이슈 및 리스크 4) 다음 주 계획\n2. 개조식(~함, ~완료)으로 간결하게 작성\n3. 메모에 없는 수치나 일정은 절대 추측하지 말고 [확인 필요]로 표시\n\n[업무 메모]\n{{업무_메모_붙여넣기}}',
         variables: ['직무', '업무_메모_붙여넣기'],
+        variableExamples: {
+          직무: '서비스 운영',
+          업무_메모_붙여넣기: '- 화: A사 정산 오류 확인 후 수정 요청\n- 수: 주간 CS 문의 42건 정리\n- 목: 다음 주 온보딩 문서 초안 작성',
+        },
         expectedOutput: '개조식 4단 구성의 주간 보고서 초안',
         tips: '고객사명이나 개인정보는 익명 코드(A사, 담당자 B)로 치환한 뒤 입력하세요.',
+      },
+    ],
+    beforeAfterExamples: [
+      {
+        id: 'weekly-report-ba-1',
+        title: '두서없는 메신저 메모 → 팀장 보고용 4단 구조화',
+        beforeInput: '월요일 A사 미팅했고 견적서 다시 보내기로 함. 화요일 CS 42건 정리, 결제 문의가 제일 많음. 다음주엔 온보딩 문서 마무리해야 함.',
+        afterOutput: '1) 핵심 성과: A사 견적 재발송 협의 완료, 주간 CS 42건 유형별 분류 완료\n2) 이슈: 결제 관련 문의 비중 증가 [원인 확인 필요]\n3) 차주 계획: 신규 고객 온보딩 가이드 최종 검수 및 배포',
+        improvementPoints: ['단순 나열을 성과·이슈·차주 계획으로 자동 분류', '근거 없는 수치는 [확인 필요]로 표시해 보고 사고 예방'],
+      },
+    ],
+    commonMistakes: [
+      {
+        id: 'weekly-report-cm-1',
+        category: 'SECURITY',
+        title: '고객사 실명·매출 원문 그대로 붙여넣기',
+        mistake: '슬랙이나 메일 원문의 실명, 연락처, 대외비 매출 숫자를 마스킹 없이 외부 무료 챗봇에 입력하는 경우',
+        prevention: 'A사/B담당자 형태로 익명화하거나 팀 플랜(학습 제외 설정) 환경에서만 작성합니다.',
+      },
+      {
+        id: 'weekly-report-cm-2',
+        category: 'HALLUCINATION',
+        title: 'AI가 임의로 채운 달성률·일정 그대로 보고',
+        mistake: '메모에 없는 "전주 대비 15% 개선", "금요일 완료 예정" 같은 문구를 AI가 매끄럽게 지어낸 채로 제출하는 경우',
+        prevention: '프롬프트에 "[확인 필요] 표기 규칙"을 반드시 넣고 보고 전 숫자·날짜만 30초 대조합니다.',
       },
     ],
     cautions: '사내 대외비 매출 수치나 고객 개인정보는 반드시 마스킹한 뒤 프롬프트에 입력하세요.',
@@ -542,9 +586,34 @@ const SEED_GUIDES: SeedGuideInput[] = [
       {
         id: 'rfp-review-1',
         title: 'RFP / 계약서 핵심 조건 추출 표',
-        prompt: '첨부한 문서만을 근거로 아래 항목을 표로 정리하세요. 문서에 명시되지 않은 내용은 "명시 없음"으로 적고, 각 항목마다 원문 조항 번호 또는 페이지를 함께 인용하세요.\n\n[점검 항목]\n- 목적 및 범위\n- 납기 / 주요 마일스톤\n- 대금 지급 조건\n- 지체상금 / 위약금 조항\n- 지식재산권 귀속\n- 모호하거나 추가 확인이 필요한 독소 조항 후보',
+        content: '첨부한 문서만을 근거로 아래 항목을 표로 정리하세요. 문서에 명시되지 않은 내용은 "명시 없음"으로 적고, 각 항목마다 원문 조항 번호 또는 페이지를 함께 인용하세요.\n\n[점검 항목]\n- 목적 및 범위\n- 납기 / 주요 마일스톤\n- 대금 지급 조건\n- 지체상금 / 위약금 조항\n- 지식재산권 귀속\n- 모호하거나 추가 확인이 필요한 독소 조항 후보',
         variables: [],
         expectedOutput: '조항 번호가 인용된 6개 항목 비교표',
+      },
+    ],
+    beforeAfterExamples: [
+      {
+        id: 'rfp-review-ba-1',
+        title: '40페이지 용역 계약서 → 6개 리스크 조항 비교표',
+        beforeInput: 'PDF 원문 전체를 읽지 않고 "이 계약서에서 불리한 점 알려줘"라고만 질문',
+        afterOutput: '| 항목 | 요약 | 원문 근거 |\n| 지체상금 | 일 0.25% (상한 미기재) | 제11조 2항 |\n| IP 귀속 | 2차 저작물 포함 발주사 단독 귀속 | 제14조 1항 |',
+        improvementPoints: ['조항 번호가 함께 출력되어 법무팀 확인 시간 단축', '명시되지 않은 항목을 "명시 없음"으로 구분해 누락 방지'],
+      },
+    ],
+    commonMistakes: [
+      {
+        id: 'rfp-review-cm-1',
+        category: 'SECURITY',
+        title: '미체결 NDA·단가표가 포함된 계약서 무단 업로드',
+        mistake: '기밀유지계약(NDA) 대상 문서를 학습 허용된 개인 무료 계정에 그대로 업로드하는 경우',
+        prevention: '사내 승인된 워크스페이스나 학습 비허용 옵션을 먼저 켜고, 당사자명·단가는 가린 뒤 검토합니다.',
+      },
+      {
+        id: 'rfp-review-cm-2',
+        category: 'HALLUCINATION',
+        title: '조항 인용 없이 "문제없음" 요약만 신뢰',
+        mistake: 'AI가 일반적인 표준 계약서 지식을 섞어 답변해 실제 특약 조항을 놓치는 경우',
+        prevention: '반드시 "원문 조항 번호/페이지 인용"을 강제하고 해당 조항만 원문 PDF에서 직접 재확인합니다.',
       },
     ],
     cautions: 'AI 요약은 실무 1차 스크리닝 용도이며, 최종 법률 판단은 반드시 법무 담당자 검토를 거치세요.',
@@ -573,9 +642,37 @@ const SEED_GUIDES: SeedGuideInput[] = [
       {
         id: 'meeting-action-1',
         title: '회의 녹취록 Action Item 추출 프롬프트',
-        prompt: '아래 회의 녹취록을 읽고 다음 형식으로 공유용 회의록을 작성하세요.\n\n1. 회의 한 줄 요약\n2. 확정된 결정 사항 (번호 목록)\n3. Action Items 표 (할 일 | 담당자 | 목표 기한 | 비고)\n4. 다음 회의 전 추가 확인이 필요한 미결 사항\n\n담당자나 기한이 대화에서 명확히 정해지지 않았으면 [미정]으로 표기하세요.\n\n[녹취록]\n{{녹취록_텍스트}}',
+        content: '아래 회의 녹취록을 읽고 다음 형식으로 공유용 회의록을 작성하세요.\n\n1. 회의 한 줄 요약\n2. 확정된 결정 사항 (번호 목록)\n3. Action Items 표 (할 일 | 담당자 | 목표 기한 | 비고)\n4. 다음 회의 전 추가 확인이 필요한 미결 사항\n\n담당자나 기한이 대화에서 명확히 정해지지 않았으면 [미정]으로 표기하세요.\n\n[녹취록]\n{{녹취록_텍스트}}',
         variables: ['녹취록_텍스트'],
+        variableExamples: {
+          녹취록_텍스트: '참석자1: 이번 주 금요일까지 배너 시안 2개만 먼저 뽑아볼게요.\n참석자2: 좋아요, 개발 일정은 다음 주 월요일에 다시 맞추죠.',
+        },
         expectedOutput: '결정 사항과 담당자별 Action Item 표',
+      },
+    ],
+    beforeAfterExamples: [
+      {
+        id: 'meeting-action-ba-1',
+        title: '1시간 분량 구어체 녹취록 → 4줄 결정 사항 + Action Item 표',
+        beforeInput: '음... 그러니까 배너는 일단 민지님이 금요일까지 두 개 정도? 네네 그렇게 하고 개발은 다음 주에 보죠.',
+        afterOutput: '- 결정 사항: 배너 시안 2종 우선 제작 후 다음 주 월요일 개발 일정 확정\n- Action Items: | 배너 시안 2종 제작 | 민지 | 이번 주 금요일 | [확정] |',
+        improvementPoints: ['잡담·추임새 제거 및 합의 사항만 번호 목록화', '기한 미정 항목을 [미정]으로 분리해 후속 확인 유도'],
+      },
+    ],
+    commonMistakes: [
+      {
+        id: 'meeting-action-cm-1',
+        category: 'WORKFLOW',
+        title: '녹취록 오탈자를 수정하지 않고 그대로 입력',
+        mistake: '음성 인식이 사내 서비스명이나 담당자 이름을 잘못 적은 상태로 AI에 넘겨 엉뚱한 담당자가 지정되는 경우',
+        prevention: '참석자 이름과 핵심 고유명사 3~5개만 먼저 찾아 바꾸기한 뒤 프롬프트를 실행합니다.',
+      },
+      {
+        id: 'meeting-action-cm-2',
+        category: 'FREE_LIMIT',
+        title: '2시간짜리 녹취록 전문을 한 번에 붙여넣어 토큰 한도 초과',
+        mistake: '무료 플랜 컨텍스트/메시지 한도를 한 번에 소진해 중간 내용이 잘리는 경우',
+        prevention: '안건별(전반/후반) 2등분으로 나누어 요약한 뒤 최종 결정 사항만 합칩니다.',
       },
     ],
     cautions: '회의 참석자에게 녹음 사실을 사전 고지하고 사내 보안 정책을 준수하세요.',
@@ -602,9 +699,31 @@ const SEED_GUIDES: SeedGuideInput[] = [
       {
         id: 'biz-email-1',
         title: '상황별 영문 비즈니스 메일 3종 생성',
-        prompt: '아래 한국어 의도를 바탕으로 상대방({{상대방_관계}})에게 보낼 영문 이메일을 작성하세요.\n- 버전 A: 정중하고 격식 있는 톤\n- 버전 B: 간결하고 실무적인 톤\n각 버전 아래에 한국어 직역 요약을 함께 제공하세요.\n\n[전달할 핵심 내용]\n{{한국어_내용}}',
+        content: '아래 한국어 의도를 바탕으로 상대방({{상대방_관계}})에게 보낼 영문 이메일을 작성하세요.\n- 버전 A: 정중하고 격식 있는 톤\n- 버전 B: 간결하고 실무적인 톤\n각 버전 아래에 한국어 직역 요약을 함께 제공하세요.\n\n[전달할 핵심 내용]\n{{한국어_내용}}',
         variables: ['상대방_관계', '한국어_내용'],
+        variableExamples: {
+          상대방_관계: '해외 SaaS 벤더 영업 담당자',
+          한국어_내용: '제안 주신 연간 플랜은 현재 예산 범위 초과로 도입이 어렵습니다. 분기 파일럿 옵션이 있다면 다음 주까지 안내 부탁드립니다.',
+        },
         expectedOutput: '격식/실무형 영문 메일 2종 및 한국어 의미 검증',
+      },
+    ],
+    beforeAfterExamples: [
+      {
+        id: 'biz-email-ba-1',
+        title: '직역 어조의 거절 메일 → 대안을 여는 정중한 비즈니스 영문 회신',
+        beforeInput: '가격이 너무 비싸서 이번엔 계약 못 합니다. 더 싼 플랜 있으면 알려주세요.',
+        afterOutput: 'Thank you for sharing the annual proposal. Due to our current Q4 budget constraints, we are unable to proceed with the annual plan at this time. Could you let us know if a quarterly pilot option is available?',
+        improvementPoints: ['직접적인 거절 표현을 예산 맥락 기반의 완곡한 표현으로 전환', '한국어 역번역으로 뉘앙스 오해 여부 즉시 확인 가능'],
+      },
+    ],
+    commonMistakes: [
+      {
+        id: 'biz-email-cm-1',
+        category: 'WORKFLOW',
+        title: '역번역 확인 없이 과도하게 직설적인 영문 초안 발송',
+        mistake: '한국어 완곡 표현이 영어로 번역되며 명령조(You must / Send us)로 바뀌는 경우',
+        prevention: '반드시 한국어 역번역 요약을 함께 받아 상대방 관계에 맞는 버전 A/B 중 선택합니다.',
       },
     ],
     cautions: '계약 조건 변경이나 견적 확정은 반드시 숫자와 날짜 단위를 재확인하세요.',
@@ -633,9 +752,38 @@ const SEED_GUIDES: SeedGuideInput[] = [
       {
         id: 'market-research-1',
         title: '경쟁사 3종 비교 조사 프롬프트',
-        prompt: '{{산업_분야}} 분야의 주요 서비스 {{서비스_목록}}를 아래 기준으로 비교해 주세요. 공식 홈페이지 또는 최근 1년 내 공식 발표 자료를 우선 출처로 삼고, 확인되지 않은 항목은 "확인 불가"로 표기하세요.\n\n비교 항목: 핵심 타깃, 대표 기능 3가지, 요금 구조(무료 플랜 유무), 한국어/국내 지원 여부, 최근 주요 업데이트',
+        content: '{{산업_분야}} 분야의 주요 서비스 {{서비스_목록}}를 아래 기준으로 비교해 주세요. 공식 홈페이지 또는 최근 1년 내 공식 발표 자료를 우선 출처로 삼고, 확인되지 않은 항목은 "확인 불가"로 표기하세요.\n\n비교 항목: 핵심 타깃, 대표 기능 3가지, 요금 구조(무료 플랜 유무), 한국어/국내 지원 여부, 최근 주요 업데이트',
         variables: ['산업_분야', '서비스_목록'],
+        variableExamples: {
+          산업_분야: 'AI 회의록 및 음성 인식',
+          서비스_목록: 'CLOVA Note, Otter.ai, Notion AI',
+        },
         expectedOutput: '출처 링크가 포함된 경쟁사 비교표',
+      },
+    ],
+    beforeAfterExamples: [
+      {
+        id: 'market-research-ba-1',
+        title: '구버전 요금 정보 혼재 답변 → 공식 출처 링크 기반 최신 비교표',
+        beforeInput: '경쟁사 3곳 가격 비교해줘',
+        afterOutput: '| 서비스 | 무료 플랜 | 유료 시작가 | 출처 |\n| CLOVA Note | 월 무료 제공 | 요금제별 상이 | clovanote.naver.com |\n| Notion AI | 제한 체험 | 애드온 유료 [확인 필요] | notion.com |',
+        improvementPoints: ['연도·공식 홈페이지 기준을 명시해 오래된 블로그 글 인용 차단', '불확실한 가격을 [확인 필요]로 분리해 오보고 방지'],
+      },
+    ],
+    commonMistakes: [
+      {
+        id: 'market-research-cm-1',
+        category: 'HALLUCINATION',
+        title: '2년 전 블로그 리뷰 가격표를 현재 요금으로 보고',
+        mistake: 'AI가 학습 시점의 옛날 가격이나 종료된 무료 혜택을 현재 기준처럼 답하는 경우',
+        prevention: 'Perplexity로 공식 요금제 URL을 직접 열어 확인하고, 최근 1년 이내 자료만 인용하도록 제한합니다.',
+      },
+      {
+        id: 'market-research-cm-2',
+        category: 'FREE_LIMIT',
+        title: 'Deep Research 무제한 실행으로 일일 무료 쿼터 소진',
+        mistake: '단순 정의 질문까지 심층 리서치 모드로 실행해 정작 중요한 비교표 작성 시 무료 한도가 끝나는 경우',
+        prevention: '개별 출처 수집은 일반 검색으로, 최종 교차 종합만 Pro/심층 모드로 1회 실행합니다.',
       },
     ],
     cautions: '가격과 무료 한도는 자주 바뀌므로 인용된 공식 요금제 링크를 반드시 한 번 열어 확인하세요.',
@@ -662,7 +810,7 @@ const SEED_GUIDES: SeedGuideInput[] = [
       {
         id: 'paper-digest-1',
         title: '복수 영문 리포트 교차 요약 프롬프트',
-        prompt: '업로드된 모든 자료를 종합해 우리 {{우리_팀_역할}} 팀을 위한 한국어 1페이지 브리프를 작성하세요.\n1. 자료 간 공통 합의점 3가지\n2. 서로 상충하거나 다른 관점\n3. 우리 업무에 즉시 검토할 만한 시사점 2가지\n모든 주장은 반드시 출처 문서명과 인용 번호를 명시하세요.',
+        content: '업로드된 모든 자료를 종합해 우리 {{우리_팀_역할}} 팀을 위한 한국어 1페이지 브리프를 작성하세요.\n1. 자료 간 공통 합의점 3가지\n2. 서로 상충하거나 다른 관점\n3. 우리 업무에 즉시 검토할 만한 시사점 2가지\n모든 주장은 반드시 출처 문서명과 인용 번호를 명시하세요.',
         variables: ['우리_팀_역할'],
         expectedOutput: '인용 번호가 붙은 1페이지 한국어 리서치 브리프',
       },
@@ -693,9 +841,39 @@ const SEED_GUIDES: SeedGuideInput[] = [
       {
         id: 'excel-formula-1',
         title: '맞춤 엑셀/구글시트 수식 생성 프롬프트',
-        prompt: '아래 시트 구조에서 원하는 결과를 얻는 {{도구_Excel_또는_GoogleSheets}} 수식을 작성해 주세요. 빈 셀이나 일치 값이 없을 때 오류가 나지 않도록 IFERROR 처리도 포함하고, 수식 각 부분의 역할을 1줄씩 설명해 주세요.\n\n[시트 구조]\n{{열_구조_및_샘플}}\n\n[원하는 결과]\n{{계산_목표}}',
+        content: '아래 시트 구조에서 원하는 결과를 얻는 {{도구_Excel_또는_GoogleSheets}} 수식을 작성해 주세요. 빈 셀이나 일치 값이 없을 때 오류가 나지 않도록 IFERROR 처리도 포함하고, 수식 각 부분의 역할을 1줄씩 설명해 주세요.\n\n[시트 구조]\n{{열_구조_및_샘플}}\n\n[원하는 결과]\n{{계산_목표}}',
         variables: ['도구_Excel_또는_GoogleSheets', '열_구조_및_샘플', '계산_목표'],
+        variableExamples: {
+          도구_Excel_또는_GoogleSheets: 'Excel',
+          열_구조_및_샘플: 'A열: 주문일(2026-11-01), B열: 담당부서(영업1팀), C열: 금액(150000)',
+          계산_목표: '영업1팀의 11월 총합 금액 계산',
+        },
         expectedOutput: '복사 가능한 수식과 예외 처리 설명',
+      },
+    ],
+    beforeAfterExamples: [
+      {
+        id: 'excel-formula-ba-1',
+        title: '에러 나는 수기 수식 → IFERROR가 포함된 실무용 조건부 집계 수식',
+        beforeInput: '영업1팀 11월 합계 구하는 엑셀 수식 알려줘',
+        afterOutput: '=IFERROR(SUMIFS(C:C, B:B, "영업1팀", A:A, ">=2026-11-01", A:A, "<=2026-11-30"), 0)\n- IFERROR로 빈 시트나 텍스트 오류 시 0 반환',
+        improvementPoints: ['열 구조와 샘플 3행 전달로 시트 수정 없이 바로 복붙 가능', 'Excel과 Google Sheets 함수 호환 차이 사전 예방'],
+      },
+    ],
+    commonMistakes: [
+      {
+        id: 'excel-formula-cm-1',
+        category: 'SECURITY',
+        title: '수식만 필요한데 고객 개인정보 CSV 파일 통째로 업로드',
+        mistake: '이름·전화번호·결제금액이 담긴 수천 행 원본 파일을 그대로 AI 채팅창에 올리는 경우',
+        prevention: '열 제목과 가상의 샘플 3행만 텍스트로 복사해 질문하면 보안 위험 없이 동일한 수식을 얻습니다.',
+      },
+      {
+        id: 'excel-formula-cm-2',
+        category: 'WORKFLOW',
+        title: '손계산 대조 없이 전체 시트에 수식 적용',
+        mistake: '날짜 서식(텍스트 vs 날짜형) 차이로 SUMIFS 결과가 0으로 나오는데 인지하지 못하는 경우',
+        prevention: '수식 적용 후 2~3개 행을 직접 필터링해 합계가 일치하는지 1분 검수합니다.',
       },
     ],
     cautions: '수식 적용 후 반드시 2~3개 행을 손계산과 대조해 기준이 맞는지 검증하세요.',
@@ -722,7 +900,7 @@ const SEED_GUIDES: SeedGuideInput[] = [
       {
         id: 'daily-digest-1',
         title: '자동화 파이프라인용 일일 요약 시스템 프롬프트',
-        prompt: '당신은 운영 리포트 봇입니다. 아래 전일 고객 문의 데이터를 읽고 Slack 공지용 요약을 작성하세요.\n- 총 문의 건수와 전일 대비 특이사항\n- 상위 문의 카테고리 3개\n- 즉시 확인이 필요한 긴급 건(있을 경우만)\n길이는 모바일에서 한눈에 보이도록 300자 이내로 유지하세요.\n\n{{시트_데이터}}',
+        content: '당신은 운영 리포트 봇입니다. 아래 전일 고객 문의 데이터를 읽고 Slack 공지용 요약을 작성하세요.\n- 총 문의 건수와 전일 대비 특이사항\n- 상위 문의 카테고리 3개\n- 즉시 확인이 필요한 긴급 건(있을 경우만)\n길이는 모바일에서 한눈에 보이도록 300자 이내로 유지하세요.\n\n{{시트_데이터}}',
         variables: ['시트_데이터'],
         expectedOutput: '300자 이내의 Slack 일일 리포트 메시지',
       },
@@ -753,9 +931,38 @@ const SEED_GUIDES: SeedGuideInput[] = [
       {
         id: 'deck-outline-1',
         title: '10장 발표 자료 스토리라인 설계 프롬프트',
-        prompt: '주제 "{{발표_주제}}"에 대해 {{청중}}을 설득하는 10장 분량 발표 자료 아웃라인을 작성하세요.\n각 슬라이드마다 다음을 포함하세요:\n- 슬라이드 번호 및 결론형 헤드라인(1문장)\n- 본문 핵심 포인트 3개(각 20자 이내)\n- 추천 시각 요소(표, 비교 차트, 프로세스 도식 중 택1)',
+        content: '주제 "{{발표_주제}}"에 대해 {{청중}}을 설득하는 10장 분량 발표 자료 아웃라인을 작성하세요.\n각 슬라이드마다 다음을 포함하세요:\n- 슬라이드 번호 및 결론형 헤드라인(1문장)\n- 본문 핵심 포인트 3개(각 20자 이내)\n- 추천 시각 요소(표, 비교 차트, 프로세스 도식 중 택1)',
         variables: ['발표_주제', '청중'],
+        variableExamples: {
+          발표_주제: '신규 B2B 구독 요금제 개편안',
+          청중: '경영진 및 영업팀 리더',
+        },
         expectedOutput: '10장 구성의 결론형 슬라이드 아웃라인',
+      },
+    ],
+    beforeAfterExamples: [
+      {
+        id: 'deck-outline-ba-1',
+        title: '긴 기획서 통째로 복붙 → 1장 1메시지 결론형 슬라이드 구조',
+        beforeInput: '3페이지짜리 요금제 개편 기획서를 Gamma에 그대로 붙여넣어 텍스트가 빽빽한 슬라이드 생성',
+        afterOutput: 'Slide 3 [결론]: 연간 플랜 전환 시 객단가 18% 상승 예상\n- 핵심 포인트: 1) 2개월 무료 할인 구조 2) 팀 시트 최소 3석 기준 3) 기존 고객 6개월 유예\n- 시각 요소: 기존 vs 신규 요금제 비교표',
+        improvementPoints: ['장표마다 결론형 헤드라인이 먼저 나와 임원 보고 가독성 향상', '글자 수 제한(20자 이내)으로 PPTX 변환 후 수정 최소화'],
+      },
+    ],
+    commonMistakes: [
+      {
+        id: 'deck-outline-cm-1',
+        category: 'FREE_LIMIT',
+        title: '전체 슬라이드를 매번 처음부터 재생성해 크레딧 소진',
+        mistake: '한두 장의 문구만 고치면 되는데 전체 덱 생성을 반복해 가입 무료 크레딧을 금방 쓰는 경우',
+        prevention: '스토리라인은 Claude/ChatGPT에서 충분히 다듬고, Gamma에서는 확정된 개요로 1~2회만 생성한 뒤 PPTX로 내보내 수정합니다.',
+      },
+      {
+        id: 'deck-outline-cm-2',
+        category: 'HALLUCINATION',
+        title: 'AI가 채운 가상 시장 규모 수치 그대로 발표',
+        mistake: '아웃라인에 예시로 들어간 시장 성장률이나 경쟁사 수치를 검증 없이 발표 자료에 남기는 경우',
+        prevention: '발표 전 모든 숫자·통계 셀에 사내 데이터 또는 공식 리포트 출처를 직접 대입합니다.',
       },
     ],
     cautions: '자동 생성된 장표의 시장 통계나 예시 수치는 발표 전 실제 출처 데이터로 교체하세요.',
@@ -782,7 +989,7 @@ const SEED_GUIDES: SeedGuideInput[] = [
       {
         id: 'prd-review-1',
         title: 'PRD 초안 & 예외 케이스 리뷰 프롬프트',
-        prompt: '당신은 시니어 PM입니다. 아래 기능 아이디어를 바탕으로 간결한 PRD 초안을 작성하고, 개발·QA 리뷰에서 지적받을 만한 예외 케이스 5가지를 도출하세요.\n\n[아이디어]\n{{기능_아이디어}}',
+        content: '당신은 시니어 PM입니다. 아래 기능 아이디어를 바탕으로 간결한 PRD 초안을 작성하고, 개발·QA 리뷰에서 지적받을 만한 예외 케이스 5가지를 도출하세요.\n\n[아이디어]\n{{기능_아이디어}}',
         variables: ['기능_아이디어'],
         expectedOutput: '목표/비목표/유저플로우 포함 PRD 및 예외 케이스 5종',
       },
@@ -813,9 +1020,31 @@ const SEED_GUIDES: SeedGuideInput[] = [
       {
         id: 'marketing-copy-1',
         title: '카드뉴스 5장 구성 & 훅 카피 생성',
-        prompt: '타깃 독자 "{{타깃_독자}}"를 대상으로 "{{홍보_주제}}"에 대한 인스타그램 카드뉴스 5장 카피를 작성하세요.\n- 1장(표지): 시선을 끄는 제목 15자 이내 + 부제 1줄 (훅 버전 3개 제안)\n- 2~4장: 핵심 문제/해결책/실제 혜택 (장당 40자 이내)\n- 5장: 행동 유도(CTA) 문구',
+        content: '타깃 독자 "{{타깃_독자}}"를 대상으로 "{{홍보_주제}}"에 대한 인스타그램 카드뉴스 5장 카피를 작성하세요.\n- 1장(표지): 시선을 끄는 제목 15자 이내 + 부제 1줄 (훅 버전 3개 제안)\n- 2~4장: 핵심 문제/해결책/실제 혜택 (장당 40자 이내)\n- 5장: 행동 유도(CTA) 문구',
         variables: ['타깃_독자', '홍보_주제'],
+        variableExamples: {
+          타깃_독자: '엑셀과 보고서 업무가 많은 3~5년차 직장인',
+          홍보_주제: '무료 AI 도구로 퇴근 1시간 앞당기는 체크리스트',
+        },
         expectedOutput: '5장 구성 카드뉴스 카피 및 표지 훅 3안',
+      },
+    ],
+    beforeAfterExamples: [
+      {
+        id: 'marketing-copy-ba-1',
+        title: '설명문 위주 긴 문장 → 모바일 가독성 높은 15자 훅 카피',
+        beforeInput: '우리 서비스를 사용하면 AI로 다양한 업무를 더 빠르고 효율적으로 처리할 수 있습니다.',
+        afterOutput: '표지 훅: "금요일 보고서, 아직도 2시간?"\n부제: 메모만 넣으면 10분 만에 끝내는 실전 템플릿 3종',
+        improvementPoints: ['추상적 형용사(효율적·다양한)를 구체적 시간/상황 숫자로 전환', '모바일 썸네일에서 잘리지 않는 15자 이내 제목 유지'],
+      },
+    ],
+    commonMistakes: [
+      {
+        id: 'marketing-copy-cm-1',
+        category: 'WORKFLOW',
+        title: '상업적 라이선스 확인 없이 Pro 전용 에셋·과장 카피 게시',
+        mistake: 'AI가 제안한 "100% 보장", "무조건 1위" 같은 과장 문구나 유료 폰트를 그대로 광고에 집행하는 경우',
+        prevention: '표시광고법상 단정적 표현을 제거하고, 사용 템플릿·폰트의 상업 이용 가능 여부를 최종 확인합니다.',
       },
     ],
     cautions: '상업적 광고 집행 시 폰트·스톡 이미지의 상업 이용 라이선스와 과장 광고 여부를 확인하세요.',
@@ -842,7 +1071,7 @@ const SEED_GUIDES: SeedGuideInput[] = [
       {
         id: 'video-script-1',
         title: '30초 제품 소개 컷별 콘티 & 대본 생성',
-        prompt: '"{{제품_또는_서비스}}"의 핵심 장점을 알리는 30초 세로형 홍보 영상 콘티를 6컷(컷당 5초) 표로 작성하세요.\n열 구성: 컷 번호 | 화면 묘사(영문 이미지/영상 프롬프트 키워드) | 한국어 내레이션(18자 이내) | 자막 문구',
+        content: '"{{제품_또는_서비스}}"의 핵심 장점을 알리는 30초 세로형 홍보 영상 콘티를 6컷(컷당 5초) 표로 작성하세요.\n열 구성: 컷 번호 | 화면 묘사(영문 이미지/영상 프롬프트 키워드) | 한국어 내레이션(18자 이내) | 자막 문구',
         variables: ['제품_또는_서비스'],
         expectedOutput: '6컷 30초 영상 콘티 및 영문 생성 키워드',
       },
@@ -1253,6 +1482,8 @@ export async function seedContents(client: PrismaClient): Promise<void> {
         pricingModel: guide.pricingModel,
         markdownBody: guide.markdownBody,
         prompts: guide.prompts as unknown as Prisma.InputJsonValue,
+        beforeAfterExamples: (guide.beforeAfterExamples ?? []) as unknown as Prisma.InputJsonValue,
+        commonMistakes: (guide.commonMistakes ?? []) as unknown as Prisma.InputJsonValue,
         cautions: guide.cautions,
         toc: guide.toc as unknown as Prisma.InputJsonValue,
       },
@@ -1263,6 +1494,8 @@ export async function seedContents(client: PrismaClient): Promise<void> {
         pricingModel: guide.pricingModel,
         markdownBody: guide.markdownBody,
         prompts: guide.prompts as unknown as Prisma.InputJsonValue,
+        beforeAfterExamples: (guide.beforeAfterExamples ?? []) as unknown as Prisma.InputJsonValue,
+        commonMistakes: (guide.commonMistakes ?? []) as unknown as Prisma.InputJsonValue,
         cautions: guide.cautions,
         toc: guide.toc as unknown as Prisma.InputJsonValue,
       },

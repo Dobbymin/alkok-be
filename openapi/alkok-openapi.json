@@ -1034,7 +1034,14 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuideDetailEnvelopeResponseDto"
+                }
+              }
+            }
           }
         },
         "summary": "업무 활용 가이드 상세",
@@ -1693,6 +1700,267 @@
       "ManualUrlDto": {
         "type": "object",
         "properties": {}
+      },
+      "GuidePromptDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "variables": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "variableExamples": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "변수별 입력 예시 매핑"
+          },
+          "expectedOutput": {
+            "type": "string"
+          },
+          "tips": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "content",
+          "variables"
+        ]
+      },
+      "GuideBeforeAfterExampleDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "beforeInput": {
+            "type": "string"
+          },
+          "afterOutput": {
+            "type": "string"
+          },
+          "improvementPoints": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "beforeInput",
+          "afterOutput",
+          "improvementPoints"
+        ]
+      },
+      "GuideCommonMistakeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "SECURITY",
+              "HALLUCINATION",
+              "FREE_LIMIT",
+              "WORKFLOW"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "mistake": {
+            "type": "string"
+          },
+          "prevention": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "title",
+          "mistake",
+          "prevention"
+        ]
+      },
+      "GuideTocItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "level": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "level"
+        ]
+      },
+      "GuideDetailResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "publishStatus": {
+            "type": "string"
+          },
+          "verificationStatus": {
+            "type": "string"
+          },
+          "verifiedAt": {
+            "type": "object",
+            "nullable": true
+          },
+          "publishedAt": {
+            "type": "object",
+            "nullable": true
+          },
+          "sourceType": {
+            "type": "string"
+          },
+          "sourceUrl": {
+            "type": "string"
+          },
+          "sourceName": {
+            "type": "object",
+            "nullable": true
+          },
+          "helpfulCount": {
+            "type": "number"
+          },
+          "isFeatured": {
+            "type": "boolean"
+          },
+          "isBookmarked": {
+            "type": "boolean"
+          },
+          "isHelpful": {
+            "type": "boolean"
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "BEGINNER",
+              "PRACTICAL",
+              "ADVANCED"
+            ]
+          },
+          "estimatedMinutes": {
+            "type": "object",
+            "nullable": true
+          },
+          "pricingModel": {
+            "type": "string",
+            "enum": [
+              "FREE",
+              "FREEMIUM",
+              "PAID"
+            ]
+          },
+          "markdownBody": {
+            "type": "string"
+          },
+          "prompts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuidePromptDto"
+            }
+          },
+          "beforeAfterExamples": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuideBeforeAfterExampleDto"
+            }
+          },
+          "commonMistakes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuideCommonMistakeDto"
+            }
+          },
+          "cautions": {
+            "type": "object",
+            "nullable": true
+          },
+          "toc": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuideTocItemDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "slug",
+          "title",
+          "summary",
+          "publishStatus",
+          "verificationStatus",
+          "sourceType",
+          "sourceUrl",
+          "helpfulCount",
+          "isFeatured",
+          "isBookmarked",
+          "isHelpful",
+          "difficulty",
+          "pricingModel",
+          "markdownBody",
+          "prompts",
+          "beforeAfterExamples",
+          "commonMistakes",
+          "toc"
+        ]
+      },
+      "GuideDetailEnvelopeResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/GuideDetailResponseDto"
+          }
+        },
+        "required": [
+          "data"
+        ]
       },
       "PreviewUrlDto": {
         "type": "object",
