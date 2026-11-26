@@ -227,6 +227,97 @@ describe('2-Pass AI Draft, Admin Inbox & Freshness/Purge Batch (e2e)', () => {
     expect(approved.body.data.verificationStatus).toBe(VerificationStatus.VALID);
   });
 
+  it('validates and persists structured GUIDE draft with beforeAfterExamples and commonMistakes', async () => {
+    const rawDoc = await prisma.rawDocument.create({
+      data: {
+        id: uuidv7(),
+        url: `https://inbox-e2e.test/guide-${Date.now()}`,
+        normalizedUrl: `https://inbox-e2e.test/guide-${Date.now()}`,
+        title: '보고서 작성 실무 가이드 원문',
+        rawText: '주간 보고서를 빠르게 정리하는 업무 절차와 주의사항 안내',
+      },
+    });
+
+    mockHermes.generateRawJson.mockResolvedValueOnce({
+      rawJson: {
+        relevanceScore: 5,
+        recommendedType: 'GUIDE',
+        workDomains: ['docs-reports'],
+        aiUses: ['writing-summary'],
+        suggestedTags: ['보고서'],
+      },
+      usage: {
+        provider: 'hermes',
+        model: 'hermes-default',
+        inputTokens: 100,
+        outputTokens: 50,
+        estimatedCostUsd: 0,
+      },
+      latencyMs: 10,
+    });
+
+    mockHermes.generateRawJson.mockResolvedValueOnce({
+      rawJson: {
+        title: '주간 보고서 구조화 가이드',
+        summary: '실무 메모를 4단 보고서로 정리합니다.',
+        workDomains: ['docs-reports'],
+        aiUses: ['writing-summary'],
+        tags: ['보고서'],
+        evidenceNotes: ['원문 근거 1'],
+        unverifiedFields: [],
+        difficulty: 'BEGINNER',
+        estimatedMinutes: 10,
+        pricingModel: 'FREEMIUM',
+        markdownBody: '## 1. 메모 정리\n업무 메모를 복사합니다.',
+        prompts: [
+          {
+            title: '보고서 템플릿',
+            content: '{{메모}} 정리',
+            variables: ['메모'],
+            variableExamples: { 메모: '주간 실적 3건' },
+          },
+        ],
+        beforeAfterExamples: [
+          {
+            title: '메모 변환',
+            beforeInput: '회의함, CS 처리함',
+            afterOutput: '1) 성과: CS 처리\n2) 회의: 차주 후속',
+            improvementPoints: ['구조화'],
+          },
+        ],
+        commonMistakes: [
+          {
+            category: 'SECURITY',
+            title: '기밀 입력',
+            mistake: '실명 포함',
+            prevention: '익명화 처리',
+          },
+        ],
+        cautions: '대외비 제외',
+      },
+      usage: {
+        provider: 'hermes',
+        model: 'hermes-default',
+        inputTokens: 200,
+        outputTokens: 150,
+        estimatedCostUsd: 0,
+      },
+      latencyMs: 15,
+    });
+
+    const draftRes = await aiDraftService.processRawDocument(rawDoc.id);
+    expect(draftRes.screenedOut).toBe(false);
+    expect(draftRes.contentId).toBeTruthy();
+
+    const detailRes = await request(app.getHttpServer())
+      .get(`/api/v1/admin/inbox/${draftRes.contentId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+    expect(detailRes.body.data.beforeAfterExamples).toHaveLength(1);
+    expect(detailRes.body.data.commonMistakes).toHaveLength(1);
+    expect(detailRes.body.data.prompts[0].variableExamples).toEqual({ 메모: '주간 실적 3건' });
+  });
+
   it('runs FRESHNESS_CHECK (TOOL 30d, GUIDE 90d, NEWS exempt) and 90d RawDocument.rawText NULL purge', async () => {
     const old35d = new Date(Date.now() - 35 * 24 * 60 * 60 * 1000);
     const old95d = new Date(Date.now() - 95 * 24 * 60 * 60 * 1000);

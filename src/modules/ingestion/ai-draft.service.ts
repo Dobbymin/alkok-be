@@ -126,12 +126,23 @@ export class AiDraftService implements OnModuleInit {
           ? GuideDraftSchema
           : NewsDraftSchema;
 
+    const guideRules =
+      targetType === ContentType.GUIDE
+        ? [
+            'GUIDE 작성 필수 규칙:',
+            '1. prompts에는 복붙 가능한 {{변수}} 템플릿과 variables[], variableExamples(변수별 입력 예시), expectedOutput, tips를 포함하세요.',
+            '2. beforeAfterExamples에는 최소 1~2건의 실제 업무 입력 샘플(beforeInput) -> AI 출력 결과 요약(afterOutput)과 improvementPoints[]를 포함하세요.',
+            '3. commonMistakes에는 최소 2~3건의 실무 실패 사례(category: SECURITY | HALLUCINATION | FREE_LIMIT | WORKFLOW 중 선택, mistake, prevention)를 포함하세요.',
+          ].join('\n')
+        : null;
+
     const draft = await this.generateWithOneRetry(
       {
         systemPrompt: [
           `당신은 한국 실무 직장인을 위한 AI 지식 편집자입니다. 유형(${targetType})에 맞는 한국어 초안 JSON을 작성하세요.`,
           '원문에 없는 가격, 무료 한도, 출시일, 한국어 지원 여부는 추측하지 말고 "[확인 필요]"로 표기한 뒤 unverifiedFields에 필드명을 기록하세요.',
           '원문 핵심 근거 2~3줄을 evidenceNotes에 포함하세요.',
+          ...(guideRules ? [guideRules] : []),
         ].join('\n'),
         userPrompt: JSON.stringify({
           type: targetType,
@@ -228,6 +239,23 @@ export class AiDraftService implements OnModuleInit {
               title: p.title,
               content: p.content,
               variables: p.variables,
+              ...(p.variableExamples ? { variableExamples: p.variableExamples } : {}),
+              ...(p.expectedOutput ? { expectedOutput: p.expectedOutput } : {}),
+              ...(p.tips ? { tips: p.tips } : {}),
+            })),
+            beforeAfterExamples: d.beforeAfterExamples.map((e) => ({
+              id: uuidv7(),
+              title: e.title,
+              beforeInput: e.beforeInput,
+              afterOutput: e.afterOutput,
+              improvementPoints: e.improvementPoints,
+            })),
+            commonMistakes: d.commonMistakes.map((m) => ({
+              id: uuidv7(),
+              category: m.category,
+              title: m.title,
+              mistake: m.mistake,
+              prevention: m.prevention,
             })),
             cautions: d.cautions ?? null,
           },

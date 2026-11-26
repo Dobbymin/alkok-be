@@ -101,6 +101,23 @@ export class AdminContentsRepository {
               title: p.title,
               content: p.content,
               variables: p.variables,
+              ...(p.variableExamples ? { variableExamples: p.variableExamples } : {}),
+              ...(p.expectedOutput ? { expectedOutput: p.expectedOutput } : {}),
+              ...(p.tips ? { tips: p.tips } : {}),
+            })),
+            beforeAfterExamples: (dto.beforeAfterExamples ?? []).map((e) => ({
+              id: e.id || uuidv7(),
+              title: e.title,
+              beforeInput: e.beforeInput,
+              afterOutput: e.afterOutput,
+              improvementPoints: e.improvementPoints ?? [],
+            })),
+            commonMistakes: (dto.commonMistakes ?? []).map((m) => ({
+              id: m.id || uuidv7(),
+              category: m.category,
+              title: m.title,
+              mistake: m.mistake,
+              prevention: m.prevention,
             })),
             cautions: dto.cautions ?? null,
           },
@@ -207,6 +224,31 @@ export class AdminContentsRepository {
                     title: p.title,
                     content: p.content,
                     variables: p.variables,
+                    ...(p.variableExamples ? { variableExamples: p.variableExamples } : {}),
+                    ...(p.expectedOutput ? { expectedOutput: p.expectedOutput } : {}),
+                    ...(p.tips ? { tips: p.tips } : {}),
+                  })),
+                }
+              : {}),
+            ...(dto.beforeAfterExamples !== undefined
+              ? {
+                  beforeAfterExamples: dto.beforeAfterExamples.map((e) => ({
+                    id: e.id || uuidv7(),
+                    title: e.title,
+                    beforeInput: e.beforeInput,
+                    afterOutput: e.afterOutput,
+                    improvementPoints: e.improvementPoints ?? [],
+                  })),
+                }
+              : {}),
+            ...(dto.commonMistakes !== undefined
+              ? {
+                  commonMistakes: dto.commonMistakes.map((m) => ({
+                    id: m.id || uuidv7(),
+                    category: m.category,
+                    title: m.title,
+                    mistake: m.mistake,
+                    prevention: m.prevention,
                   })),
                 }
               : {}),

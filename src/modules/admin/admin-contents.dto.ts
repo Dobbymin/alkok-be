@@ -1,9 +1,12 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
   IsEnum,
+  IsIn,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   IsUrl,
@@ -21,21 +24,89 @@ import {
   VerificationStatus,
 } from '@prisma/client';
 import { PaginationQueryDto } from '../../common/dto/pagination.dto';
+import { GUIDE_MISTAKE_CATEGORIES, type GuideMistakeCategory } from '../contents/contents.dto';
 
 export class PromptBlockDto {
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   id?: string;
 
+  @ApiProperty()
   @IsString()
   title!: string;
 
+  @ApiProperty()
   @IsString()
   content!: string;
 
+  @ApiProperty({ type: [String] })
   @IsArray()
   @IsString({ each: true })
   variables!: string[];
+
+  @ApiPropertyOptional({ type: 'object', additionalProperties: { type: 'string' } })
+  @IsOptional()
+  @IsObject()
+  variableExamples?: Record<string, string>;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  expectedOutput?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  tips?: string;
+}
+
+export class GuideBeforeAfterExampleInputDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  id?: string;
+
+  @ApiProperty()
+  @IsString()
+  title!: string;
+
+  @ApiProperty()
+  @IsString()
+  beforeInput!: string;
+
+  @ApiProperty()
+  @IsString()
+  afterOutput!: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  improvementPoints?: string[];
+}
+
+export class GuideCommonMistakeInputDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  id?: string;
+
+  @ApiProperty({ enum: GUIDE_MISTAKE_CATEGORIES })
+  @IsIn(GUIDE_MISTAKE_CATEGORIES)
+  category!: GuideMistakeCategory;
+
+  @ApiProperty()
+  @IsString()
+  title!: string;
+
+  @ApiProperty()
+  @IsString()
+  mistake!: string;
+
+  @ApiProperty()
+  @IsString()
+  prevention!: string;
 }
 
 export class AdminContentListQueryDto extends PaginationQueryDto {
@@ -123,6 +194,18 @@ export class CreateAdminContentDto {
   @ValidateNested({ each: true })
   @Type(() => PromptBlockDto)
   prompts?: PromptBlockDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GuideBeforeAfterExampleInputDto)
+  beforeAfterExamples?: GuideBeforeAfterExampleInputDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GuideCommonMistakeInputDto)
+  commonMistakes?: GuideCommonMistakeInputDto[];
 
   @IsOptional()
   @IsString()
@@ -241,6 +324,18 @@ export class UpdateAdminContentDto {
   @ValidateNested({ each: true })
   @Type(() => PromptBlockDto)
   prompts?: PromptBlockDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GuideBeforeAfterExampleInputDto)
+  beforeAfterExamples?: GuideBeforeAfterExampleInputDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GuideCommonMistakeInputDto)
+  commonMistakes?: GuideCommonMistakeInputDto[];
 
   @IsOptional()
   @IsString()

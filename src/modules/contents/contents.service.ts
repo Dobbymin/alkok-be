@@ -5,7 +5,16 @@ import {
   mapContentSummary,
   type ContentWithRelations,
 } from '../../common/utils/content-mapper.util';
-import type { GuideListQueryDto, NewsListQueryDto, ToolListQueryDto } from './contents.dto';
+import {
+  GUIDE_MISTAKE_CATEGORIES,
+  type GuideBeforeAfterExampleDto,
+  type GuideCommonMistakeDto,
+  type GuideListQueryDto,
+  type GuideMistakeCategory,
+  type GuidePromptDto,
+  type NewsListQueryDto,
+  type ToolListQueryDto,
+} from './contents.dto';
 import { ContentsRepository } from './contents.repository';
 
 @Injectable()
@@ -114,25 +123,11 @@ export class ContentsService {
       estimatedMinutes: guide.guideDetail?.estimatedMinutes ?? null,
       pricingModel: guide.guideDetail?.pricingModel ?? 'FREEMIUM',
       markdownBody: guide.guideDetail?.markdownBody ?? '',
-      prompts: Array.isArray(guide.guideDetail?.prompts)
-        ? guide.guideDetail.prompts.map((item) => {
-            if (typeof item === 'object' && item !== null) {
-              const p = item as Record<string, unknown>;
-              const content =
-                typeof p.content === 'string'
-                  ? p.content
-                  : typeof p.prompt === 'string'
-                    ? p.prompt
-                    : '';
-              return {
-                ...p,
-                content,
-                variables: Array.isArray(p.variables) ? p.variables : [],
-              };
-            }
-            return item;
-          })
-        : [],
+      prompts: this.normalizeGuidePrompts(guide.guideDetail?.prompts),
+      beforeAfterExamples: this.normalizeBeforeAfterExamples(
+        guide.guideDetail?.beforeAfterExamples,
+      ),
+      commonMistakes: this.normalizeCommonMistakes(guide.guideDetail?.commonMistakes),
       cautions: guide.guideDetail?.cautions ?? null,
       toc: Array.isArray(guide.guideDetail?.toc) ? guide.guideDetail.toc : [],
       recommendedTools: recommendedTools.map((t) => this.mapToolDetail(t, flags)),
@@ -242,6 +237,93 @@ export class ContentsService {
       ...this.mapNewsDetail(news, flags),
       relatedContents: relatedContents.map((c) => this.mapSummaryWithFlags(c, flags)),
     };
+  }
+
+  private normalizeGuidePrompts(raw: unknown): GuidePromptDto[] {
+    if (!Array.isArray(raw)) return [];
+    const result: GuidePromptDto[] = [];
+    for (let idx = 0; idx < raw.length; idx += 1) {
+      const item: unknown = raw[idx];
+      if (typeof item !== 'object' || item === null) continue;
+      const p = item as Record<string, unknown>;
+      const content =
+        typeof p.content === 'string' ? p.content : typeof p.prompt === 'string' ? p.prompt : '';
+      const variables = Array.isArray(p.variables)
+        ? p.variables.filter((v): v is string => typeof v === 'string')
+        : [];
+      const normalized: GuidePromptDto = {
+        id: typeof p.id === 'string' && p.id.length > 0 ? p.id : `prompt-${idx + 1}`,
+        title: typeof p.title === 'string' ? p.title : '',
+        content,
+        variables,
+      };
+      if (
+        typeof p.variableExamples === 'object' &&
+        p.variableExamples !== null &&
+        !Array.isArray(p.variableExamples)
+      ) {
+        const examples: Record<string, string> = {};
+        for (const [k, v] of Object.entries(p.variableExamples as Record<string, unknown>)) {
+          if (typeof v === 'string') {
+            examples[k] = v;
+          }
+        }
+        if (Object.keys(examples).length > 0) {
+          normalized.variableExamples = examples;
+        }
+      }
+      if (typeof p.expectedOutput === 'string') {
+        normalized.expectedOutput = p.expectedOutput;
+      }
+      if (typeof p.tips === 'string') {
+        normalized.tips = p.tips;
+      }
+      result.push(normalized);
+    }
+    return result;
+  }
+
+  private normalizeBeforeAfterExamples(raw: unknown): GuideBeforeAfterExampleDto[] {
+    if (!Array.isArray(raw)) return [];
+    const result: GuideBeforeAfterExampleDto[] = [];
+    for (let idx = 0; idx < raw.length; idx += 1) {
+      const item: unknown = raw[idx];
+      if (typeof item !== 'object' || item === null) continue;
+      const e = item as Record<string, unknown>;
+      result.push({
+        id: typeof e.id === 'string' && e.id.length > 0 ? e.id : `example-${idx + 1}`,
+        title: typeof e.title === 'string' ? e.title : '',
+        beforeInput: typeof e.beforeInput === 'string' ? e.beforeInput : '',
+        afterOutput: typeof e.afterOutput === 'string' ? e.afterOutput : '',
+        improvementPoints: Array.isArray(e.improvementPoints)
+          ? e.improvementPoints.filter((pt): pt is string => typeof pt === 'string')
+          : [],
+      });
+    }
+    return result;
+  }
+
+  private normalizeCommonMistakes(raw: unknown): GuideCommonMistakeDto[] {
+    if (!Array.isArray(raw)) return [];
+    const result: GuideCommonMistakeDto[] = [];
+    for (let idx = 0; idx < raw.length; idx += 1) {
+      const item: unknown = raw[idx];
+      if (typeof item !== 'object' || item === null) continue;
+      const m = item as Record<string, unknown>;
+      const category =
+        typeof m.category === 'string' &&
+        (GUIDE_MISTAKE_CATEGORIES as readonly string[]).includes(m.category)
+          ? (m.category as GuideMistakeCategory)
+          : 'WORKFLOW';
+      result.push({
+        id: typeof m.id === 'string' && m.id.length > 0 ? m.id : `mistake-${idx + 1}`,
+        category,
+        title: typeof m.title === 'string' ? m.title : '',
+        mistake: typeof m.mistake === 'string' ? m.mistake : '',
+        prevention: typeof m.prevention === 'string' ? m.prevention : '',
+      });
+    }
+    return result;
   }
 
   private mapSummaryWithFlags(
