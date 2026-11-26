@@ -66,6 +66,26 @@ const WHITELIST_SOURCES = [
     sourceType: SourceType.MEDIA,
     fetchIntervalHours: 24,
   },
+  {
+    name: 'Model Context Protocol Blog',
+    feedUrl: 'https://blog.modelcontextprotocol.io/index.xml',
+    sourceType: SourceType.OFFICIAL,
+    fetchIntervalHours: 12,
+  },
+  {
+    name: 'GitHub AI & ML Blog',
+    feedUrl: 'https://github.blog/ai-and-ml/feed/',
+    sourceType: SourceType.OFFICIAL,
+    fetchIntervalHours: 12,
+  },
+];
+
+const TOPIC_TAGS = [
+  { slug: '에이전트-스킬-mcp', name: '에이전트·스킬·MCP' },
+  { slug: 'mcp', name: 'MCP' },
+  { slug: 'ai-에이전트', name: 'AI 에이전트' },
+  { slug: 'claude-skills', name: 'Claude Skills' },
+  { slug: '웹-대안-비교', name: '웹 대안 비교' },
 ];
 
 const WORK_DOMAIN_CATEGORIES = [
@@ -169,6 +189,14 @@ export async function runSeed(client: PrismaClient = prisma): Promise<void> {
         fetchIntervalHours: src.fetchIntervalHours,
         isActive: true,
       },
+    });
+  }
+
+  for (const tag of TOPIC_TAGS) {
+    await client.tag.upsert({
+      where: { slug: tag.slug },
+      update: { name: tag.name },
+      create: { id: uuidv7(), slug: tag.slug, name: tag.name },
     });
   }
 

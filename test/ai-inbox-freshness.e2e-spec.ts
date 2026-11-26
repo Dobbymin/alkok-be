@@ -318,6 +318,54 @@ describe('2-Pass AI Draft, Admin Inbox & Freshness/Purge Batch (e2e)', () => {
     expect(detailRes.body.data.prompts[0].variableExamples).toEqual({ 메모: '주간 실적 3건' });
   });
 
+  it('ingests manual agent/MCP URL with non-technical translation prompt and 에이전트-스킬-mcp tag', async () => {
+    const rawDoc = await prisma.rawDocument.create({
+      data: {
+        id: uuidv7(),
+        url: `https://inbox-e2e.test/mcp-${Date.now()}`,
+        normalizedUrl: `https://inbox-e2e.test/mcp-${Date.now()}`,
+        title: 'Model Context Protocol (MCP) 실무 활용 업데이트',
+        rawText: 'MCP servers connect Claude and AI agents to Notion and Google Drive.',
+      },
+    });
+
+    mockHermes.generateRawJson.mockResolvedValueOnce({
+      rawJson: {
+        title: 'MCP 연결 기능의 비개발자 실무 활용법',
+        summary: '설치 없이 쓸 수 있는 웹 AI 커넥터 대안을 함께 비교합니다.',
+        workDomains: ['docs-reports'],
+        aiUses: ['automation-workflow'],
+        tags: ['mcp', '웹-대안-비교'],
+        evidenceNotes: ['원문 MCP 연결 기능 설명'],
+        unverifiedFields: [],
+        keyPoints: ['한 줄 개념 설명', '비개발자 도입 난이도 구분', '웹 AI 대안 비교'],
+        workImpact:
+          '한 줄 개념: AI에 업무 앱을 꽂는 공용 포트입니다. 도입 난이도: 웹 커넥터는 즉시 사용 가능. 대안: Claude Projects와 Zapier.',
+      },
+      usage: {
+        provider: 'hermes',
+        model: 'hermes-default',
+        inputTokens: 150,
+        outputTokens: 90,
+        estimatedCostUsd: 0,
+      },
+      latencyMs: 12,
+    });
+
+    const draftRes = await aiDraftService.processRawDocument(rawDoc.id, { skipScreening: true });
+    expect(draftRes.screenedOut).toBe(false);
+    expect(draftRes.contentId).toBeTruthy();
+    expect(mockHermes.generateRawJson).toHaveBeenCalledTimes(1);
+
+    const detailRes = await request(app.getHttpServer())
+      .get(`/api/v1/admin/inbox/${draftRes.contentId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+    expect(detailRes.body.data.publishStatus).toBe(PublishStatus.IN_REVIEW);
+    expect(detailRes.body.data.tags).toContain('에이전트-스킬-mcp');
+    expect(detailRes.body.data.workImpact).toContain('도입 난이도');
+  });
+
   it('runs FRESHNESS_CHECK (TOOL 30d, GUIDE 90d, NEWS exempt) and 90d RawDocument.rawText NULL purge', async () => {
     const old35d = new Date(Date.now() - 35 * 24 * 60 * 60 * 1000);
     const old95d = new Date(Date.now() - 95 * 24 * 60 * 60 * 1000);

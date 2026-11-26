@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TaxonomiesRepository } from './taxonomies.repository';
+import { FEATURED_TOPICS } from './topic-presets';
 
 @Injectable()
 export class TaxonomiesService {
@@ -14,6 +15,7 @@ export class TaxonomiesService {
     return {
       ...grouped,
       popularTags,
+      topics: FEATURED_TOPICS,
     };
   }
 }

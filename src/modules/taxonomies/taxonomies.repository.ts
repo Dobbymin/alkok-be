@@ -33,12 +33,14 @@ export class TaxonomiesRepository {
       orderBy: { name: 'asc' },
     });
 
-    return tags.map((t) => ({
-      id: t.id,
-      slug: t.slug,
-      name: t.name,
-      count: t._count.contents,
-    }));
+    return tags
+      .map((t) => ({
+        id: t.id,
+        slug: t.slug,
+        name: t.name,
+        count: t._count.contents,
+      }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'ko'));
   }
 
   groupCategories(
