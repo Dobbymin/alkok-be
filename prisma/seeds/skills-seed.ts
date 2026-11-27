@@ -6,6 +6,8 @@ import {
   SkillKind,
 } from '@prisma/client';
 
+import { EXTRA_SEED_SKILLS } from './skills-catalog-expansion-seed';
+
 export interface SeedSkillInput {
   slug: string;
   title: string;
@@ -79,7 +81,7 @@ export interface SeedSkillInput {
   compatibleToolSlugs: string[];
 }
 
-const DEFAULT_SKILL_TOC: Array<{ id: string; text: string; level: number }> = [
+export const DEFAULT_SKILL_TOC: Array<{ id: string; text: string; level: number }> = [
   { id: 'overview', text: '어떤 스킬·플러그인인가요?', level: 2 },
   { id: 'before-after', text: '도입 전후 비교', level: 2 },
   { id: 'workflow', text: '어떻게 진행되나요?', level: 2 },
@@ -90,7 +92,7 @@ const DEFAULT_SKILL_TOC: Array<{ id: string; text: string; level: number }> = [
   { id: 'source-preview', text: '파일 구성 및 SKILL.md 미리보기', level: 2 },
 ];
 
-export const SEED_SKILLS: SeedSkillInput[] = [
+const BASE_SEED_SKILLS: SeedSkillInput[] = [
   {
     slug: 'skill-humanize-korean',
     title: 'Humanize KR (AI 글 사람처럼 윤문하기)',
@@ -1158,6 +1160,11 @@ description: Firebase 백엔드, Auth, Firestore 보안 규칙 구성을 지원�
     toc: DEFAULT_SKILL_TOC,
     compatibleToolSlugs: ['microsoft-copilot', 'chatgpt', 'claude', 'cursor'],
   },
+];
+
+export const SEED_SKILLS: SeedSkillInput[] = [
+  ...BASE_SEED_SKILLS,
+  ...EXTRA_SEED_SKILLS,
 ];
 
 export interface ToolEnrichmentInput {
