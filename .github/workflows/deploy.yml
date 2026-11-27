@@ -80,8 +80,8 @@ jobs:
 
           export BE_IMAGE_TAG="${NEW_TAG}"
           docker compose -f docker-compose.prod.yml pull alkok-be
-          docker compose -f docker-compose.prod.yml run --rm alkok-be npx --yes prisma@6.19.3 migrate deploy
-          docker compose -f docker-compose.prod.yml run --rm alkok-be node dist/prisma/seed.js
+          docker compose -f docker-compose.prod.yml run --rm -T alkok-be npx --yes prisma@6.19.3 migrate deploy
+          docker compose -f docker-compose.prod.yml run --rm -T alkok-be node dist/prisma/seed.js
           docker compose -f docker-compose.prod.yml up -d --no-deps alkok-be
 
           HEALTH_OK=false
