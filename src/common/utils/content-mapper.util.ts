@@ -69,11 +69,44 @@ export interface ContentWithRelations {
     platforms: string[];
     strengths: string[];
     limitations: string[];
+    useCases?: string[];
+    gettingStartedSteps?: unknown;
+    examplePrompts?: unknown;
+    faq?: unknown;
   } | null;
   newsDetail?: {
     keyPoints: string[];
     workImpact: string;
     originalPublishedAt: Date | null;
+  } | null;
+  skillDetail?: {
+    skillKind: string;
+    skillSlug: string;
+    authorName: string;
+    license: string | null;
+    repositoryUrl: string;
+    sourceFileUrl: string | null;
+    executionVerification: string;
+    difficulty: string;
+    pricingModel: string;
+    compatibleAgents: string[];
+    overview: string;
+    useCases: string[];
+    beforeAfter: unknown;
+    workflowSteps: unknown;
+    prerequisites: unknown;
+    installPrompt: string | null;
+    installGuides: unknown;
+    examplePrompts: unknown;
+    expectedOutputs: unknown;
+    postRunChecklist: string[];
+    tips: string[];
+    cautions: string | null;
+    faq: unknown;
+    fileStructure: string[];
+    skillMdPreview: string | null;
+    webAlternative: unknown;
+    toc: unknown;
   } | null;
 }
 

@@ -2,7 +2,9 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import {
   ContentType,
   JobType,
+  Prisma,
   PublishStatus,
+  SkillExecutionVerification,
   SourceType,
   VerificationStatus,
 } from '@prisma/client';
@@ -16,9 +18,11 @@ import {
   GuideDraftSchema,
   NewsDraftSchema,
   ScreeningOutputSchema,
+  SkillDraftSchema,
   ToolDraftSchema,
   type GuideDraft,
   type NewsDraft,
+  type SkillDraft,
   type ToolDraft,
 } from './ai-draft.schemas';
 import {
@@ -135,7 +139,9 @@ export class AiDraftService implements OnModuleInit {
         ? ToolDraftSchema
         : targetType === ContentType.GUIDE
           ? GuideDraftSchema
-          : NewsDraftSchema;
+          : targetType === ContentType.SKILL
+            ? SkillDraftSchema
+            : NewsDraftSchema;
 
     const draft = await this.generateWithOneRetry(
       {
@@ -150,7 +156,7 @@ export class AiDraftService implements OnModuleInit {
           suggestedTags: initialTags,
           rawText: (rawDoc.rawText ?? '').slice(0, 12000),
         }),
-        schema: schema as z.ZodType<NewsDraft | ToolDraft | GuideDraft>,
+        schema: schema as z.ZodType<NewsDraft | ToolDraft | GuideDraft | SkillDraft>,
       },
       { taskType: 'PASS2_DRAFT', jobRunId: options.jobRunId, isManual },
     );
@@ -225,6 +231,42 @@ export class AiDraftService implements OnModuleInit {
             platforms: d.platforms,
             strengths: d.strengths,
             limitations: d.limitations,
+            useCases: d.useCases ?? [],
+            gettingStartedSteps: d.gettingStartedSteps ?? [],
+            examplePrompts: d.examplePrompts ?? [],
+            faq: d.faq ?? [],
+          },
+        });
+      } else if (targetType === ContentType.SKILL) {
+        const d = draft as SkillDraft;
+        await tx.skillDetail.create({
+          data: {
+            contentId,
+            skillKind: d.skillKind,
+            skillSlug: d.skillSlug,
+            authorName: d.authorName,
+            license: d.license ?? null,
+            repositoryUrl: rawDoc.url,
+            executionVerification: SkillExecutionVerification.UNVERIFIED,
+            difficulty: d.difficulty,
+            pricingModel: d.pricingModel,
+            compatibleAgents: d.compatibleAgents,
+            overview: d.overview,
+            useCases: d.useCases,
+            beforeAfter: d.beforeAfter,
+            workflowSteps: d.workflowSteps,
+            prerequisites: d.prerequisites,
+            installPrompt: d.installPrompt ?? null,
+            installGuides: d.installGuides,
+            examplePrompts: d.examplePrompts,
+            expectedOutputs: d.expectedOutputs,
+            postRunChecklist: d.postRunChecklist,
+            tips: d.tips,
+            cautions: d.cautions ?? null,
+            faq: d.faq,
+            webAlternative: d.webAlternative
+              ? (d.webAlternative as Prisma.InputJsonValue)
+              : Prisma.JsonNull,
           },
         });
       } else {
@@ -259,6 +301,7 @@ export class AiDraftService implements OnModuleInit {
               mistake: m.mistake,
               prevention: m.prevention,
             })),
+            verificationChecklist: d.verificationChecklist ?? [],
             cautions: d.cautions ?? null,
           },
         });

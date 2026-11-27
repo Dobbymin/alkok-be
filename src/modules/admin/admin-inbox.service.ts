@@ -53,6 +53,7 @@ export class AdminInboxService {
         guideDetail: true,
         toolDetail: true,
         newsDetail: true,
+        skillDetail: true,
       },
     });
     if (!content) {
@@ -95,6 +96,12 @@ export class AdminInboxService {
         ? content.guideDetail.commonMistakes
         : [],
       pricingSummary: content.toolDetail?.pricingSummary ?? null,
+      skillKind: content.skillDetail?.skillKind ?? null,
+      compatibleAgents: content.skillDetail?.compatibleAgents ?? [],
+      overview: content.skillDetail?.overview ?? null,
+      installPrompt: content.skillDetail?.installPrompt ?? null,
+      skillMdPreview: content.skillDetail?.skillMdPreview ?? null,
+      webAlternative: content.skillDetail?.webAlternative ?? null,
       createdAt: content.createdAt.toISOString(),
     };
   }
@@ -168,6 +175,20 @@ export class AdminInboxService {
         await tx.toolDetail.updateMany({
           where: { contentId: id },
           data: { pricingSummary: dto.pricingSummary },
+        });
+      } else if (
+        existing.type === ContentType.SKILL &&
+        (dto.overview !== undefined ||
+          dto.installPrompt !== undefined ||
+          dto.skillMdPreview !== undefined)
+      ) {
+        await tx.skillDetail.updateMany({
+          where: { contentId: id },
+          data: {
+            ...(dto.overview !== undefined ? { overview: dto.overview } : {}),
+            ...(dto.installPrompt !== undefined ? { installPrompt: dto.installPrompt } : {}),
+            ...(dto.skillMdPreview !== undefined ? { skillMdPreview: dto.skillMdPreview } : {}),
+          },
         });
       }
 

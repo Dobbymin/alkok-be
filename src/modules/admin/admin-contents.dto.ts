@@ -19,6 +19,8 @@ import {
   KoreanSupportLevel,
   PricingModel,
   PublishStatus,
+  SkillExecutionVerification,
+  SkillKind,
   SourceType,
   ToolKind,
   VerificationStatus,
@@ -208,6 +210,11 @@ export class CreateAdminContentDto {
   commonMistakes?: GuideCommonMistakeInputDto[];
 
   @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  verificationChecklist?: string[];
+
+  @IsOptional()
   @IsString()
   cautions?: string;
 
@@ -233,6 +240,10 @@ export class CreateAdminContentDto {
   pricingSummary?: string;
 
   @IsOptional()
+  @IsArray()
+  pricingPlans?: Record<string, unknown>[];
+
+  @IsOptional()
   @IsEnum(KoreanSupportLevel)
   koreanSupport?: KoreanSupportLevel;
 
@@ -251,6 +262,23 @@ export class CreateAdminContentDto {
   @IsString({ each: true })
   limitations?: string[];
 
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  useCases?: string[];
+
+  @IsOptional()
+  @IsArray()
+  gettingStartedSteps?: Record<string, unknown>[];
+
+  @IsOptional()
+  @IsArray()
+  examplePrompts?: Record<string, unknown>[];
+
+  @IsOptional()
+  @IsArray()
+  faq?: Record<string, unknown>[];
+
   // News fields
   @IsOptional()
   @IsArray()
@@ -260,6 +288,91 @@ export class CreateAdminContentDto {
   @IsOptional()
   @IsString()
   workImpact?: string;
+
+  // Skill fields
+  @IsOptional()
+  @IsEnum(SkillKind)
+  skillKind?: SkillKind;
+
+  @IsOptional()
+  @IsString()
+  skillSlug?: string;
+
+  @IsOptional()
+  @IsString()
+  authorName?: string;
+
+  @IsOptional()
+  @IsString()
+  license?: string;
+
+  @IsOptional()
+  @IsUrl({ protocols: ['http', 'https'], require_protocol: true })
+  repositoryUrl?: string;
+
+  @IsOptional()
+  @IsUrl({ protocols: ['http', 'https'], require_protocol: true })
+  sourceFileUrl?: string;
+
+  @IsOptional()
+  @IsEnum(SkillExecutionVerification)
+  executionVerification?: SkillExecutionVerification;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  compatibleAgents?: string[];
+
+  @IsOptional()
+  @IsString()
+  overview?: string;
+
+  @IsOptional()
+  @IsObject()
+  beforeAfter?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsArray()
+  workflowSteps?: Record<string, unknown>[];
+
+  @IsOptional()
+  @IsArray()
+  prerequisites?: Record<string, unknown>[];
+
+  @IsOptional()
+  @IsString()
+  installPrompt?: string;
+
+  @IsOptional()
+  @IsArray()
+  installGuides?: Record<string, unknown>[];
+
+  @IsOptional()
+  @IsArray()
+  expectedOutputs?: Record<string, unknown>[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  postRunChecklist?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tips?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  fileStructure?: string[];
+
+  @IsOptional()
+  @IsString()
+  skillMdPreview?: string;
+
+  @IsOptional()
+  @IsObject()
+  webAlternative?: Record<string, unknown>;
 }
 
 export class UpdateAdminContentDto {
@@ -338,6 +451,11 @@ export class UpdateAdminContentDto {
   commonMistakes?: GuideCommonMistakeInputDto[];
 
   @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  verificationChecklist?: string[];
+
+  @IsOptional()
   @IsString()
   cautions?: string;
 
@@ -362,6 +480,10 @@ export class UpdateAdminContentDto {
   pricingSummary?: string;
 
   @IsOptional()
+  @IsArray()
+  pricingPlans?: Record<string, unknown>[];
+
+  @IsOptional()
   @IsEnum(KoreanSupportLevel)
   koreanSupport?: KoreanSupportLevel;
 
@@ -383,9 +505,110 @@ export class UpdateAdminContentDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
+  useCases?: string[];
+
+  @IsOptional()
+  @IsArray()
+  gettingStartedSteps?: Record<string, unknown>[];
+
+  @IsOptional()
+  @IsArray()
+  examplePrompts?: Record<string, unknown>[];
+
+  @IsOptional()
+  @IsArray()
+  faq?: Record<string, unknown>[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
   keyPoints?: string[];
 
   @IsOptional()
   @IsString()
   workImpact?: string;
+
+  @IsOptional()
+  @IsEnum(SkillKind)
+  skillKind?: SkillKind;
+
+  @IsOptional()
+  @IsString()
+  skillSlug?: string;
+
+  @IsOptional()
+  @IsString()
+  authorName?: string;
+
+  @IsOptional()
+  @IsString()
+  license?: string;
+
+  @IsOptional()
+  @IsUrl({ protocols: ['http', 'https'], require_protocol: true })
+  repositoryUrl?: string;
+
+  @IsOptional()
+  @IsUrl({ protocols: ['http', 'https'], require_protocol: true })
+  sourceFileUrl?: string;
+
+  @IsOptional()
+  @IsEnum(SkillExecutionVerification)
+  executionVerification?: SkillExecutionVerification;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  compatibleAgents?: string[];
+
+  @IsOptional()
+  @IsString()
+  overview?: string;
+
+  @IsOptional()
+  @IsObject()
+  beforeAfter?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsArray()
+  workflowSteps?: Record<string, unknown>[];
+
+  @IsOptional()
+  @IsArray()
+  prerequisites?: Record<string, unknown>[];
+
+  @IsOptional()
+  @IsString()
+  installPrompt?: string;
+
+  @IsOptional()
+  @IsArray()
+  installGuides?: Record<string, unknown>[];
+
+  @IsOptional()
+  @IsArray()
+  expectedOutputs?: Record<string, unknown>[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  postRunChecklist?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tips?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  fileStructure?: string[];
+
+  @IsOptional()
+  @IsString()
+  skillMdPreview?: string;
+
+  @IsOptional()
+  @IsObject()
+  webAlternative?: Record<string, unknown>;
 }

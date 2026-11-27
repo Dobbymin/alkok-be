@@ -1,5 +1,5 @@
-import { DifficultyLevel, PricingModel } from '@prisma/client';
-import { GuideDraftSchema } from './ai-draft.schemas';
+import { ContentType, DifficultyLevel, PricingModel, SkillKind } from '@prisma/client';
+import { GuideDraftSchema, ScreeningOutputSchema, SkillDraftSchema } from './ai-draft.schemas';
 
 describe('GuideDraftSchema', () => {
   const validPayload = {
@@ -59,5 +59,33 @@ describe('GuideDraftSchema', () => {
       commonMistakes: [{ ...validPayload.commonMistakes[0], category: 'INVALID_CAT' }],
     };
     expect(() => GuideDraftSchema.parse(invalidCategory)).toThrow();
+  });
+
+  it('accepts SKILL in ScreeningOutputSchema and SkillDraftSchema', () => {
+    const screen = ScreeningOutputSchema.parse({
+      relevanceScore: 5,
+      recommendedType: ContentType.SKILL,
+      workDomains: ['docs-reports'],
+      aiUses: ['automation-workflow'],
+      suggestedTags: ['claude-skills'],
+    });
+    expect(screen.recommendedType).toBe(ContentType.SKILL);
+
+    const skill = SkillDraftSchema.parse({
+      title: 'Humanize KR',
+      summary: 'AI 글 윤문 스킬입니다.',
+      evidenceNotes: ['SKILL.md 확인'],
+      skillKind: SkillKind.SKILL,
+      skillSlug: 'humanize-korean',
+      authorName: 'epoko77-ai',
+      difficulty: DifficultyLevel.PRACTICAL,
+      pricingModel: PricingModel.FREE,
+      compatibleAgents: ['Claude Code'],
+      overview: '번역투를 제거하고 자연스러운 한국어로 다듬습니다.',
+      useCases: ['블로그 윤문'],
+      beforeAfter: { beforeItems: ['어색함'], afterItems: ['자연스러움'] },
+      workflowSteps: [{ step: 1, title: '진단', description: '패턴 탐지' }],
+    });
+    expect(skill.skillKind).toBe(SkillKind.SKILL);
   });
 });
