@@ -79,10 +79,13 @@ jobs:
           echo "\${PREV_TAG:-latest}" > .last_good_alkok-be
 
           export BE_IMAGE_TAG="${NEW_TAG}"
-          docker compose -f docker-compose.prod.yml pull alkok-be
-          docker compose -f docker-compose.prod.yml run --rm -T alkok-be npx --yes prisma@6.19.3 migrate deploy
-          docker compose -f docker-compose.prod.yml run --rm -T alkok-be node dist/prisma/seed.js
-          docker compose -f docker-compose.prod.yml up -d --no-deps alkok-be
+          docker compose -f docker-compose.prod.yml pull alkok-be </dev/null
+          docker compose -f docker-compose.prod.yml run --rm -T alkok-be npx --yes prisma@6.19.3 migrate deploy </dev/null
+          echo "[deploy] migrate done"
+          docker compose -f docker-compose.prod.yml run --rm -T alkok-be node dist/prisma/seed.js </dev/null
+          echo "[deploy] seed done"
+          docker compose -f docker-compose.prod.yml up -d --no-deps alkok-be </dev/null
+          echo "[deploy] up done"
 
           HEALTH_OK=false
           for i in \$(seq 1 15); do
@@ -97,7 +100,7 @@ jobs:
             ROLLBACK_TAG=\$(cat .last_good_alkok-be)
             echo "Health check failed — rolling back to \${ROLLBACK_TAG}" >&2
             export BE_IMAGE_TAG="\${ROLLBACK_TAG}"
-            docker compose -f docker-compose.prod.yml up -d --no-deps alkok-be
+            docker compose -f docker-compose.prod.yml up -d --no-deps alkok-be </dev/null
             exit 1
           fi
 
