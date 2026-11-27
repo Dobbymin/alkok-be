@@ -7,6 +7,7 @@ import {
 } from '@prisma/client';
 
 import { EXTRA_SEED_SKILLS } from './skills-catalog-expansion-seed';
+import { CAREER_SEED_SKILLS } from './skills-career-seed';
 
 export interface SeedSkillInput {
   slug: string;
@@ -266,9 +267,9 @@ description: AI(ChatGPT·Claude·Gemini 등)가 쓴 한글 텍스트를 "사람�
     sourceUrl: 'https://github.com/techeer-sv/Career-Skills',
     sourceName: 'techeer-sv',
     isFeatured: true,
-    domains: ['docs-reports', 'planning-slides'],
+    domains: ['career', 'docs-reports', 'planning-slides'],
     aiUses: ['writing-summary', 'search-analysis'],
-    tags: ['에이전트-스킬-mcp', '이력서점검', '취업준비', 'claude-skills'],
+    tags: ['에이전트-스킬-mcp', '취업·이직', '이력서점검', 'claude-skills'],
     skillKind: SkillKind.SKILL,
     skillSlug: 'hiring-sim-resume-review',
     authorName: 'techeer-sv',
@@ -1165,6 +1166,7 @@ description: Firebase 백엔드, Auth, Firestore 보안 규칙 구성을 지원�
 export const SEED_SKILLS: SeedSkillInput[] = [
   ...BASE_SEED_SKILLS,
   ...EXTRA_SEED_SKILLS,
+  ...CAREER_SEED_SKILLS,
 ];
 
 export interface ToolEnrichmentInput {

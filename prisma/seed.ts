@@ -86,6 +86,7 @@ const TOPIC_TAGS = [
   { slug: 'ai-에이전트', name: 'AI 에이전트' },
   { slug: 'claude-skills', name: 'Claude Skills' },
   { slug: '웹-대안-비교', name: '웹 대안 비교' },
+  { slug: '취업·이직', name: '취업·이직' },
 ];
 
 const WORK_DOMAIN_CATEGORIES = [
@@ -95,6 +96,7 @@ const WORK_DOMAIN_CATEGORIES = [
   { slug: 'data-sheets', name: '데이터·스프레드시트', sortOrder: 4 },
   { slug: 'planning-slides', name: '기획·프레젠테이션', sortOrder: 5 },
   { slug: 'content-design', name: '콘텐츠·디자인', sortOrder: 6 },
+  { slug: 'career', name: '취업·이직', sortOrder: 7 },
 ];
 
 const AI_USE_CATEGORIES = [
