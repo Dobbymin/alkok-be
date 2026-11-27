@@ -22,7 +22,7 @@ Configure the following secrets in `Dobbymin/alkok-be` repository settings:
 
 ## 3. Host Nginx Setup
 
-Copy `deploy/nginx/alkok.dobbymin.cloud.conf` to `/etc/nginx/conf.d/alkok.dobbymin.cloud.conf`, run Certbot for TLS, and reload Nginx:
+Copy `deploy/nginx/alkok.dobbymin.cloud.conf` and `deploy/nginx/admin.dobbymin.cloud.conf` to `/etc/nginx/conf.d/`, run Certbot for TLS (`alkok.dobbymin.cloud` and `admin.dobbymin.cloud`), ensure `CORS_ORIGINS` in `/home/dobbymin/project/alkok/.env` includes `https://admin.dobbymin.cloud`, and reload Nginx:
 
 ```bash
 sudo nginx -t && sudo systemctl reload nginx

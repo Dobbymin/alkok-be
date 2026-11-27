@@ -70,6 +70,10 @@ services:
       - alkok-be
     env_file:
       - /home/dobbymin/project/alkok/.env.fe
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: https://admin.dobbymin.cloud
+      NEXT_PUBLIC_SITE_URL: https://admin.dobbymin.cloud
+      NEXT_PUBLIC_WEB_URL: https://alkok.dobbymin.cloud
     ports:
       - "127.0.0.1:18103:3000"
     networks:
