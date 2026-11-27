@@ -8,7 +8,7 @@ export const envSchema = z.object({
   CORS_ORIGINS: z
     .string()
     .default(
-      'https://alkok.dobbymin.cloud,http://localhost:3000,http://localhost:3001,http://localhost:18101,http://localhost:18103',
+      'https://alkok.dobbymin.cloud,https://admin.dobbymin.cloud,http://localhost:3000,http://localhost:3001,http://localhost:18101,http://localhost:18103',
     ),
   DATABASE_URL: z.string().optional(),
   JWT_ACCESS_SECRET: z.string().min(16).default('dev-only-jwt-secret-change-in-production'),
