@@ -11,6 +11,11 @@ import {
   VerificationStatus,
 } from '@prisma/client';
 import { uuidv7 } from '../../src/common/utils/uuidv7';
+import {
+  SEED_SKILLS,
+  TOOL_ENRICHMENT_DEFAULTS,
+  buildDefaultToolEnrichment,
+} from './skills-seed';
 
 interface SeedToolInput {
   slug: string;
@@ -1542,6 +1547,17 @@ export async function seedContents(client: PrismaClient): Promise<void> {
       },
     });
 
+    const defaultEnrichment = buildDefaultToolEnrichment(tool);
+    const customEnrichment = TOOL_ENRICHMENT_DEFAULTS[tool.slug] ?? {};
+    const toolEnrichment = {
+      pricingPlans: customEnrichment.pricingPlans ?? defaultEnrichment.pricingPlans,
+      useCases: customEnrichment.useCases ?? defaultEnrichment.useCases,
+      gettingStartedSteps:
+        customEnrichment.gettingStartedSteps ?? defaultEnrichment.gettingStartedSteps,
+      examplePrompts: customEnrichment.examplePrompts ?? defaultEnrichment.examplePrompts,
+      faq: customEnrichment.faq ?? defaultEnrichment.faq,
+    };
+
     await client.toolDetail.upsert({
       where: { contentId },
       update: {
@@ -1551,10 +1567,15 @@ export async function seedContents(client: PrismaClient): Promise<void> {
         pricingModel: tool.pricingModel,
         hasFreePlan: tool.hasFreePlan,
         pricingSummary: tool.pricingSummary,
+        pricingPlans: toolEnrichment.pricingPlans as unknown as Prisma.InputJsonValue,
         koreanSupport: tool.koreanSupport,
         platforms: tool.platforms,
         strengths: tool.strengths,
         limitations: tool.limitations,
+        useCases: toolEnrichment.useCases,
+        gettingStartedSteps: toolEnrichment.gettingStartedSteps as unknown as Prisma.InputJsonValue,
+        examplePrompts: toolEnrichment.examplePrompts as unknown as Prisma.InputJsonValue,
+        faq: toolEnrichment.faq as unknown as Prisma.InputJsonValue,
       },
       create: {
         contentId,
@@ -1564,10 +1585,15 @@ export async function seedContents(client: PrismaClient): Promise<void> {
         pricingModel: tool.pricingModel,
         hasFreePlan: tool.hasFreePlan,
         pricingSummary: tool.pricingSummary,
+        pricingPlans: toolEnrichment.pricingPlans as unknown as Prisma.InputJsonValue,
         koreanSupport: tool.koreanSupport,
         platforms: tool.platforms,
         strengths: tool.strengths,
         limitations: tool.limitations,
+        useCases: toolEnrichment.useCases,
+        gettingStartedSteps: toolEnrichment.gettingStartedSteps as unknown as Prisma.InputJsonValue,
+        examplePrompts: toolEnrichment.examplePrompts as unknown as Prisma.InputJsonValue,
+        faq: toolEnrichment.faq as unknown as Prisma.InputJsonValue,
       },
     });
 
@@ -1622,6 +1648,12 @@ export async function seedContents(client: PrismaClient): Promise<void> {
       },
     });
 
+    const defaultChecklist = [
+      'AI 출력물에 포함된 수치·날짜·고유명사가 원본 자료와 일치하는지 대조합니다.',
+      '사내 대외비나 개인정보가 프롬프트 또는 결과물에 남아 있지 않은지 점검합니다.',
+      '최종 받는 사람(상사·고객·팀원)의 목적과 톤에 맞게 불필요한 서두를 정리합니다.',
+    ];
+
     await client.guideDetail.upsert({
       where: { contentId },
       update: {
@@ -1632,6 +1664,7 @@ export async function seedContents(client: PrismaClient): Promise<void> {
         prompts: guide.prompts as unknown as Prisma.InputJsonValue,
         beforeAfterExamples: (guide.beforeAfterExamples ?? []) as unknown as Prisma.InputJsonValue,
         commonMistakes: (guide.commonMistakes ?? []) as unknown as Prisma.InputJsonValue,
+        verificationChecklist: defaultChecklist,
         cautions: guide.cautions,
         toc: guide.toc as unknown as Prisma.InputJsonValue,
       },
@@ -1644,6 +1677,7 @@ export async function seedContents(client: PrismaClient): Promise<void> {
         prompts: guide.prompts as unknown as Prisma.InputJsonValue,
         beforeAfterExamples: (guide.beforeAfterExamples ?? []) as unknown as Prisma.InputJsonValue,
         commonMistakes: (guide.commonMistakes ?? []) as unknown as Prisma.InputJsonValue,
+        verificationChecklist: defaultChecklist,
         cautions: guide.cautions,
         toc: guide.toc as unknown as Prisma.InputJsonValue,
       },
@@ -1745,6 +1779,142 @@ export async function seedContents(client: PrismaClient): Promise<void> {
       [...news.domains, ...news.aiUses],
       news.tags,
     );
+    seededContentIds.push(contentId);
+  }
+
+  for (const skill of SEED_SKILLS) {
+    const existing = await client.content.findUnique({
+      where: { slug: skill.slug },
+      select: { id: true },
+    });
+    const contentId = existing?.id ?? uuidv7();
+
+    await client.content.upsert({
+      where: { slug: skill.slug },
+      update: {
+        type: ContentType.SKILL,
+        title: skill.title,
+        summary: skill.summary,
+        publishStatus: PublishStatus.PUBLISHED,
+        verificationStatus: VerificationStatus.VALID,
+        verifiedAt: now,
+        publishedAt: now,
+        sourceType: SourceType.OFFICIAL,
+        sourceUrl: skill.sourceUrl,
+        sourceName: skill.sourceName,
+        isFeatured: Boolean(skill.isFeatured),
+        deletedAt: null,
+      },
+      create: {
+        id: contentId,
+        type: ContentType.SKILL,
+        slug: skill.slug,
+        title: skill.title,
+        summary: skill.summary,
+        publishStatus: PublishStatus.PUBLISHED,
+        verificationStatus: VerificationStatus.VALID,
+        verifiedAt: now,
+        publishedAt: now,
+        sourceType: SourceType.OFFICIAL,
+        sourceUrl: skill.sourceUrl,
+        sourceName: skill.sourceName,
+        isFeatured: Boolean(skill.isFeatured),
+      },
+    });
+
+    await client.skillDetail.upsert({
+      where: { contentId },
+      update: {
+        skillKind: skill.skillKind,
+        skillSlug: skill.skillSlug,
+        authorName: skill.authorName,
+        license: skill.license ?? null,
+        repositoryUrl: skill.repositoryUrl,
+        sourceFileUrl: skill.sourceFileUrl ?? null,
+        executionVerification: skill.executionVerification,
+        difficulty: skill.difficulty,
+        pricingModel: skill.pricingModel,
+        compatibleAgents: skill.compatibleAgents,
+        overview: skill.overview,
+        useCases: skill.useCases,
+        beforeAfter: skill.beforeAfter as unknown as Prisma.InputJsonValue,
+        workflowSteps: skill.workflowSteps as unknown as Prisma.InputJsonValue,
+        prerequisites: skill.prerequisites as unknown as Prisma.InputJsonValue,
+        installPrompt: skill.installPrompt,
+        installGuides: skill.installGuides as unknown as Prisma.InputJsonValue,
+        examplePrompts: skill.examplePrompts as unknown as Prisma.InputJsonValue,
+        expectedOutputs: skill.expectedOutputs as unknown as Prisma.InputJsonValue,
+        postRunChecklist: skill.postRunChecklist,
+        tips: skill.tips,
+        cautions: skill.cautions,
+        faq: skill.faq as unknown as Prisma.InputJsonValue,
+        fileStructure: skill.fileStructure,
+        skillMdPreview: skill.skillMdPreview,
+        webAlternative: skill.webAlternative as unknown as Prisma.InputJsonValue,
+        toc: skill.toc as unknown as Prisma.InputJsonValue,
+      },
+      create: {
+        contentId,
+        skillKind: skill.skillKind,
+        skillSlug: skill.skillSlug,
+        authorName: skill.authorName,
+        license: skill.license ?? null,
+        repositoryUrl: skill.repositoryUrl,
+        sourceFileUrl: skill.sourceFileUrl ?? null,
+        executionVerification: skill.executionVerification,
+        difficulty: skill.difficulty,
+        pricingModel: skill.pricingModel,
+        compatibleAgents: skill.compatibleAgents,
+        overview: skill.overview,
+        useCases: skill.useCases,
+        beforeAfter: skill.beforeAfter as unknown as Prisma.InputJsonValue,
+        workflowSteps: skill.workflowSteps as unknown as Prisma.InputJsonValue,
+        prerequisites: skill.prerequisites as unknown as Prisma.InputJsonValue,
+        installPrompt: skill.installPrompt,
+        installGuides: skill.installGuides as unknown as Prisma.InputJsonValue,
+        examplePrompts: skill.examplePrompts as unknown as Prisma.InputJsonValue,
+        expectedOutputs: skill.expectedOutputs as unknown as Prisma.InputJsonValue,
+        postRunChecklist: skill.postRunChecklist,
+        tips: skill.tips,
+        cautions: skill.cautions,
+        faq: skill.faq as unknown as Prisma.InputJsonValue,
+        fileStructure: skill.fileStructure,
+        skillMdPreview: skill.skillMdPreview,
+        webAlternative: skill.webAlternative as unknown as Prisma.InputJsonValue,
+        toc: skill.toc as unknown as Prisma.InputJsonValue,
+      },
+    });
+
+    await syncCategoriesAndTags(
+      client,
+      contentId,
+      categoryMap,
+      [...skill.domains, ...skill.aiUses],
+      skill.tags,
+    );
+
+    await client.contentRelation.deleteMany({
+      where: { fromContentId: contentId, relationType: 'COMPATIBLE_TOOL' },
+    });
+    const relTools = skill.compatibleToolSlugs
+      .map((slug, index) => ({
+        toContentId: contentIdBySlug.get(slug),
+        sortOrder: index + 1,
+      }))
+      .filter((item): item is { toContentId: string; sortOrder: number } => Boolean(item.toContentId));
+    if (relTools.length > 0) {
+      await client.contentRelation.createMany({
+        data: relTools.map((item) => ({
+          fromContentId: contentId,
+          toContentId: item.toContentId,
+          relationType: 'COMPATIBLE_TOOL',
+          sortOrder: item.sortOrder,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    contentIdBySlug.set(skill.slug, contentId);
     seededContentIds.push(contentId);
   }
 

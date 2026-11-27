@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { ContentType, Prisma, PublishStatus, VerificationStatus } from '@prisma/client';
 import { PrismaService } from '../../infra/prisma/prisma.service';
-import type { GuideListQueryDto, NewsListQueryDto, ToolListQueryDto } from './contents.dto';
+import type {
+  GuideListQueryDto,
+  NewsListQueryDto,
+  SkillListQueryDto,
+  ToolListQueryDto,
+} from './contents.dto';
 
 const PUBLIC_WHERE_BASE: Prisma.ContentWhereInput = {
   publishStatus: PublishStatus.PUBLISHED,
@@ -14,6 +19,7 @@ const PUBLIC_INCLUDE = {
   guideDetail: true,
   toolDetail: true,
   newsDetail: true,
+  skillDetail: true,
 } satisfies Prisma.ContentInclude;
 
 @Injectable()
@@ -81,6 +87,15 @@ export class ContentsRepository {
       where: { ...PUBLIC_WHERE_BASE, type: ContentType.NEWS },
       include: PUBLIC_INCLUDE,
       orderBy: { publishedAt: 'desc' },
+      take: limit,
+    });
+  }
+
+  findHomeSkills(limit = 6) {
+    return this.prisma.content.findMany({
+      where: { ...PUBLIC_WHERE_BASE, type: ContentType.SKILL },
+      include: PUBLIC_INCLUDE,
+      orderBy: [{ isFeatured: 'desc' }, { helpfulCount: 'desc' }, { publishedAt: 'desc' }],
       take: limit,
     });
   }
@@ -237,7 +252,7 @@ export class ContentsRepository {
         ...PUBLIC_INCLUDE,
         toRelations: {
           where: {
-            relationType: 'RECOMMENDED_TOOL',
+            relationType: { in: ['RECOMMENDED_TOOL', 'COMPATIBLE_TOOL'] },
             fromContent: PUBLIC_WHERE_BASE,
           },
           include: {
@@ -247,6 +262,95 @@ export class ContentsRepository {
       },
     });
     return tool;
+  }
+
+  async listSkills(query: SkillListQueryDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const categorySlugs = [query.workDomain, query.aiUse].filter(Boolean) as string[];
+
+    const where: Prisma.ContentWhereInput = {
+      ...PUBLIC_WHERE_BASE,
+      type: ContentType.SKILL,
+      ...(query.validOnly ? { verificationStatus: VerificationStatus.VALID } : {}),
+      ...(categorySlugs.length > 0
+        ? {
+            AND: categorySlugs.map((slug) => ({
+              categories: { some: { category: { slug } } },
+            })),
+          }
+        : {}),
+      ...(query.skillKind || query.agent || query.difficulty || query.pricingModel
+        ? {
+            skillDetail: {
+              ...(query.skillKind ? { skillKind: query.skillKind } : {}),
+              ...(query.agent ? { compatibleAgents: { has: query.agent } } : {}),
+              ...(query.difficulty ? { difficulty: query.difficulty } : {}),
+              ...(query.pricingModel ? { pricingModel: query.pricingModel } : {}),
+            },
+          }
+        : {}),
+    };
+
+    const orderBy: Prisma.ContentOrderByWithRelationInput[] =
+      query.sort === 'latest'
+        ? [{ publishedAt: 'desc' }]
+        : query.sort === 'helpful'
+          ? [{ helpfulCount: 'desc' }, { publishedAt: 'desc' }]
+          : [{ isFeatured: 'desc' }, { helpfulCount: 'desc' }, { publishedAt: 'desc' }];
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.content.findMany({
+        where,
+        include: PUBLIC_INCLUDE,
+        orderBy,
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.content.count({ where }),
+    ]);
+
+    return { items, total, page, limit };
+  }
+
+  async findSkillBySlug(slug: string) {
+    const skill = await this.prisma.content.findFirst({
+      where: { ...PUBLIC_WHERE_BASE, type: ContentType.SKILL, slug },
+      include: {
+        ...PUBLIC_INCLUDE,
+        fromRelations: {
+          where: {
+            relationType: { in: ['COMPATIBLE_TOOL', 'RECOMMENDED_TOOL'] },
+            toContent: PUBLIC_WHERE_BASE,
+          },
+          include: {
+            toContent: { include: PUBLIC_INCLUDE },
+          },
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
+    });
+    if (!skill) return null;
+
+    const domainIds = skill.categories
+      .filter((c) => c.category.group === 'WORK_DOMAIN')
+      .map((c) => c.categoryId);
+
+    const relatedSkills = await this.prisma.content.findMany({
+      where: {
+        ...PUBLIC_WHERE_BASE,
+        type: ContentType.SKILL,
+        id: { not: skill.id },
+        ...(domainIds.length > 0
+          ? { categories: { some: { categoryId: { in: domainIds } } } }
+          : {}),
+      },
+      include: PUBLIC_INCLUDE,
+      orderBy: [{ isFeatured: 'desc' }, { publishedAt: 'desc' }],
+      take: 3,
+    });
+
+    return { skill, relatedSkills };
   }
 
   async listNews(query: NewsListQueryDto) {

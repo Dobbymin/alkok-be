@@ -1143,6 +1143,52 @@
         ]
       }
     },
+    "/api/v1/skills": {
+      "get": {
+        "operationId": "listSkills",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "플러그인·스킬·MCP 목록",
+        "tags": [
+          "skills"
+        ]
+      }
+    },
+    "/api/v1/skills/{slug}": {
+      "get": {
+        "operationId": "getSkillBySlug",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillDetailEnvelopeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "플러그인·스킬·MCP 상세",
+        "tags": [
+          "skills"
+        ]
+      }
+    },
     "/api/v1/search": {
       "get": {
         "operationId": "search",
@@ -1917,6 +1963,12 @@
               "$ref": "#/components/schemas/GuideCommonMistakeDto"
             }
           },
+          "verificationChecklist": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "cautions": {
             "type": "object",
             "nullable": true
@@ -1948,6 +2000,7 @@
           "prompts",
           "beforeAfterExamples",
           "commonMistakes",
+          "verificationChecklist",
           "toc"
         ]
       },
@@ -1956,6 +2009,421 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/GuideDetailResponseDto"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "SkillBeforeAfterDto": {
+        "type": "object",
+        "properties": {
+          "beforeItems": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "afterItems": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "beforeItems",
+          "afterItems"
+        ]
+      },
+      "SkillWorkflowStepDto": {
+        "type": "object",
+        "properties": {
+          "step": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "badge": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "step",
+          "title",
+          "description"
+        ]
+      },
+      "SkillPrerequisiteDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "required",
+          "description"
+        ]
+      },
+      "SkillInstallGuideDto": {
+        "type": "object",
+        "properties": {
+          "environment": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "command": {
+            "type": "string"
+          },
+          "invokeExample": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "environment",
+          "label",
+          "steps"
+        ]
+      },
+      "SkillExamplePromptDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "prompt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "prompt"
+        ]
+      },
+      "SkillExpectedOutputDto": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "order",
+          "title",
+          "description"
+        ]
+      },
+      "SkillFaqItemDto": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string"
+          },
+          "answer": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "question",
+          "answer"
+        ]
+      },
+      "SkillWebAlternativeDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "recommendedTools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "guideSlug": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "recommendedTools"
+        ]
+      },
+      "SkillDetailResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "publishStatus": {
+            "type": "string"
+          },
+          "verificationStatus": {
+            "type": "string"
+          },
+          "verifiedAt": {
+            "type": "object",
+            "nullable": true
+          },
+          "publishedAt": {
+            "type": "object",
+            "nullable": true
+          },
+          "sourceType": {
+            "type": "string"
+          },
+          "sourceUrl": {
+            "type": "string"
+          },
+          "sourceName": {
+            "type": "object",
+            "nullable": true
+          },
+          "helpfulCount": {
+            "type": "number"
+          },
+          "isFeatured": {
+            "type": "boolean"
+          },
+          "isBookmarked": {
+            "type": "boolean"
+          },
+          "isHelpful": {
+            "type": "boolean"
+          },
+          "skillKind": {
+            "type": "string",
+            "enum": [
+              "SKILL",
+              "PLUGIN",
+              "MCP"
+            ]
+          },
+          "skillSlug": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "license": {
+            "type": "object",
+            "nullable": true
+          },
+          "repositoryUrl": {
+            "type": "string"
+          },
+          "sourceFileUrl": {
+            "type": "object",
+            "nullable": true
+          },
+          "executionVerification": {
+            "type": "string",
+            "enum": [
+              "VERIFIED",
+              "SOURCE_CHECKED",
+              "UNVERIFIED"
+            ]
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "BEGINNER",
+              "PRACTICAL",
+              "ADVANCED"
+            ]
+          },
+          "pricingModel": {
+            "type": "string",
+            "enum": [
+              "FREE",
+              "FREEMIUM",
+              "PAID"
+            ]
+          },
+          "compatibleAgents": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "overview": {
+            "type": "string"
+          },
+          "useCases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "beforeAfter": {
+            "$ref": "#/components/schemas/SkillBeforeAfterDto"
+          },
+          "workflowSteps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SkillWorkflowStepDto"
+            }
+          },
+          "prerequisites": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SkillPrerequisiteDto"
+            }
+          },
+          "installPrompt": {
+            "type": "object",
+            "nullable": true
+          },
+          "installGuides": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SkillInstallGuideDto"
+            }
+          },
+          "examplePrompts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SkillExamplePromptDto"
+            }
+          },
+          "expectedOutputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SkillExpectedOutputDto"
+            }
+          },
+          "postRunChecklist": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tips": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cautions": {
+            "type": "object",
+            "nullable": true
+          },
+          "faq": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SkillFaqItemDto"
+            }
+          },
+          "fileStructure": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "skillMdPreview": {
+            "type": "object",
+            "nullable": true
+          },
+          "webAlternative": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SkillWebAlternativeDto"
+              }
+            ]
+          },
+          "toc": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuideTocItemDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "slug",
+          "title",
+          "summary",
+          "publishStatus",
+          "verificationStatus",
+          "sourceType",
+          "sourceUrl",
+          "helpfulCount",
+          "isFeatured",
+          "isBookmarked",
+          "isHelpful",
+          "skillKind",
+          "skillSlug",
+          "authorName",
+          "repositoryUrl",
+          "executionVerification",
+          "difficulty",
+          "pricingModel",
+          "compatibleAgents",
+          "overview",
+          "useCases",
+          "beforeAfter",
+          "workflowSteps",
+          "prerequisites",
+          "installGuides",
+          "examplePrompts",
+          "expectedOutputs",
+          "postRunChecklist",
+          "tips",
+          "faq",
+          "fileStructure",
+          "toc"
+        ]
+      },
+      "SkillDetailEnvelopeResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SkillDetailResponseDto"
           }
         },
         "required": [

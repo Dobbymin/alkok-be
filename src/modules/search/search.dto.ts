@@ -8,8 +8,8 @@ export class SearchQueryDto extends PaginationQueryDto {
   q!: string;
 
   @IsOptional()
-  @IsIn(['ALL', 'GUIDE', 'TOOL', 'NEWS', 'VAULT'])
-  type?: 'ALL' | 'GUIDE' | 'TOOL' | 'NEWS' | 'VAULT' = 'ALL';
+  @IsIn(['ALL', 'GUIDE', 'TOOL', 'SKILL', 'NEWS', 'VAULT'])
+  type?: 'ALL' | 'GUIDE' | 'TOOL' | 'SKILL' | 'NEWS' | 'VAULT' = 'ALL';
 
   @IsOptional()
   @IsString()

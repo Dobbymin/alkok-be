@@ -66,6 +66,15 @@ export function buildPass2SystemPrompt(targetType: ContentType, isAgentMcp: bool
       '1. prompts에는 복붙 가능한 {{변수}} 템플릿과 variables[], variableExamples(변수별 입력 예시), expectedOutput, tips를 포함하세요.',
       '2. beforeAfterExamples에는 최소 1~2건의 실제 업무 입력 샘플(beforeInput) -> AI 출력 결과 요약(afterOutput)과 improvementPoints[]를 포함하세요.',
       '3. commonMistakes에는 최소 2~3건의 실무 실패 사례(category: SECURITY | HALLUCINATION | FREE_LIMIT | WORKFLOW 중 선택, mistake, prevention)를 포함하세요.',
+      '4. verificationChecklist에는 결과물 검수 체크리스트 3~4개를 포함하세요.',
+    );
+  } else if (targetType === ContentType.SKILL) {
+    lines.push(
+      'SKILL(스킬·플러그인·MCP) 작성 필수 규칙:',
+      '1. skillKind(SKILL | PLUGIN | MCP), skillSlug, authorName, compatibleAgents, overview, useCases를 명확히 작성하세요.',
+      '2. beforeAfter(beforeItems[], afterItems[])와 workflowSteps(step, title, description)를 구체적으로 정리하세요.',
+      '3. installPrompt(에이전트 자연어 설치 요청문), installGuides(환경별 설치 단계), examplePrompts, expectedOutputs, postRunChecklist, faq를 포함하세요.',
+      '4. 비개발자도 설치 없이 따라 할 수 있도록 webAlternative(title, description, recommendedTools)를 반드시 포함하세요.',
     );
   }
 

@@ -39,6 +39,18 @@ export class ApproveInboxDto {
   @IsOptional()
   @IsString()
   pricingSummary?: string;
+
+  @IsOptional()
+  @IsString()
+  overview?: string;
+
+  @IsOptional()
+  @IsString()
+  installPrompt?: string;
+
+  @IsOptional()
+  @IsString()
+  skillMdPreview?: string;
 }
 
 export class RejectInboxDto {

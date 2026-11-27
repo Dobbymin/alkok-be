@@ -49,5 +49,9 @@ describe('agent-mcp-prompts', () => {
 
     const pass2NewsNormal = buildPass2SystemPrompt(ContentType.NEWS, false);
     expect(pass2NewsNormal).not.toContain('비개발자 도입 난이도');
+
+    const pass2SkillAgent = buildPass2SystemPrompt(ContentType.SKILL, true);
+    expect(pass2SkillAgent).toContain('skillKind');
+    expect(pass2SkillAgent).toContain('webAlternative');
   });
 });

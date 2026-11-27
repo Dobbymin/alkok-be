@@ -23,6 +23,19 @@ enum ContentType {
   GUIDE
   TOOL
   NEWS
+  SKILL
+}
+
+enum SkillKind {
+  SKILL
+  PLUGIN
+  MCP
+}
+
+enum SkillExecutionVerification {
+  VERIFIED
+  SOURCE_CHECKED
+  UNVERIFIED
 }
 
 enum PublishStatus {
@@ -222,6 +235,7 @@ model Content {
   guideDetail   GuideDetail?
   toolDetail    ToolDetail?
   newsDetail    NewsDetail?
+  skillDetail   SkillDetail?
   fromRelations ContentRelation[] @relation("FromContent")
   toRelations   ContentRelation[] @relation("ToContent")
   categories    ContentCategory[]
@@ -243,8 +257,9 @@ model GuideDetail {
   markdownBody        String          @map("markdown_body") @db.Text
   prompts             Json            @default("[]")
   beforeAfterExamples Json            @default("[]") @map("before_after_examples")
-  commonMistakes      Json            @default("[]") @map("common_mistakes")
-  cautions            String?         @db.Text
+  commonMistakes        Json            @default("[]") @map("common_mistakes")
+  verificationChecklist String[]        @default([]) @map("verification_checklist")
+  cautions              String?         @db.Text
   toc                 Json?
 
   content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
@@ -265,13 +280,53 @@ model ToolDetail {
   pricingPlans   Json?              @map("pricing_plans")
   koreanSupport  KoreanSupportLevel @map("korean_support")
   platforms      String[]           @default([])
-  strengths      String[]           @default([])
-  limitations    String[]           @default([])
+  strengths           String[]           @default([])
+  limitations         String[]           @default([])
+  useCases            String[]           @default([]) @map("use_cases")
+  gettingStartedSteps Json               @default("[]") @map("getting_started_steps")
+  examplePrompts      Json               @default("[]") @map("example_prompts")
+  faq                 Json               @default("[]")
 
   content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
   @@index([toolKind, hasFreePlan, koreanSupport])
   @@map("tool_details")
+}
+
+model SkillDetail {
+  contentId             String                    @id @map("content_id") @db.Uuid
+  skillKind             SkillKind                 @map("skill_kind")
+  skillSlug             String                    @map("skill_slug")
+  authorName            String                    @map("author_name")
+  license               String?
+  repositoryUrl         String                    @map("repository_url")
+  sourceFileUrl         String?                   @map("source_file_url")
+  executionVerification SkillExecutionVerification @default(SOURCE_CHECKED) @map("execution_verification")
+  difficulty            DifficultyLevel           @default(PRACTICAL)
+  pricingModel          PricingModel              @default(FREE) @map("pricing_model")
+  compatibleAgents      String[]                  @default([]) @map("compatible_agents")
+  overview              String                    @db.Text
+  useCases              String[]                  @default([]) @map("use_cases")
+  beforeAfter           Json                      @default("{}") @map("before_after")
+  workflowSteps         Json                      @default("[]") @map("workflow_steps")
+  prerequisites         Json                      @default("[]") @map("prerequisites")
+  installPrompt         String?                   @map("install_prompt") @db.Text
+  installGuides         Json                      @default("[]") @map("install_guides")
+  examplePrompts        Json                      @default("[]") @map("example_prompts")
+  expectedOutputs       Json                      @default("[]") @map("expected_outputs")
+  postRunChecklist      String[]                  @default([]) @map("post_run_checklist")
+  tips                  String[]                  @default([])
+  cautions              String?                   @db.Text
+  faq                   Json                      @default("[]")
+  fileStructure         String[]                  @default([]) @map("file_structure")
+  skillMdPreview        String?                   @map("skill_md_preview") @db.Text
+  webAlternative        Json?                     @map("web_alternative")
+  toc                   Json?
+
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([skillKind, difficulty])
+  @@map("skill_details")
 }
 
 model NewsDetail {

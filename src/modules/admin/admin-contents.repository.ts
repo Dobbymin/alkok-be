@@ -6,6 +6,8 @@ import {
   PricingModel,
   Prisma,
   PublishStatus,
+  SkillExecutionVerification,
+  SkillKind,
   ToolKind,
   VerificationStatus,
 } from '@prisma/client';
@@ -24,6 +26,7 @@ const CONTENT_INCLUDE = {
   guideDetail: true,
   toolDetail: true,
   newsDetail: true,
+  skillDetail: true,
 } satisfies Prisma.ContentInclude;
 
 @Injectable()
@@ -119,6 +122,7 @@ export class AdminContentsRepository {
               mistake: m.mistake,
               prevention: m.prevention,
             })),
+            verificationChecklist: dto.verificationChecklist ?? [],
             cautions: dto.cautions ?? null,
           },
         });
@@ -132,10 +136,15 @@ export class AdminContentsRepository {
             pricingModel: dto.pricingModel ?? PricingModel.FREEMIUM,
             hasFreePlan: dto.hasFreePlan ?? false,
             pricingSummary: dto.pricingSummary ?? '[확인 필요]',
+            pricingPlans: (dto.pricingPlans ?? []) as Prisma.InputJsonValue,
             koreanSupport: dto.koreanSupport ?? KoreanSupportLevel.PARTIAL,
             platforms: dto.platforms ?? ['Web'],
             strengths: dto.strengths ?? [],
             limitations: dto.limitations ?? [],
+            useCases: dto.useCases ?? [],
+            gettingStartedSteps: (dto.gettingStartedSteps ?? []) as Prisma.InputJsonValue,
+            examplePrompts: (dto.examplePrompts ?? []) as Prisma.InputJsonValue,
+            faq: (dto.faq ?? []) as Prisma.InputJsonValue,
           },
         });
       } else if (dto.type === ContentType.NEWS) {
@@ -145,6 +154,44 @@ export class AdminContentsRepository {
             keyPoints: dto.keyPoints ?? [],
             workImpact: dto.workImpact ?? '',
             originalPublishedAt: now,
+          },
+        });
+      } else if (dto.type === ContentType.SKILL) {
+        await tx.skillDetail.create({
+          data: {
+            contentId: id,
+            skillKind: dto.skillKind ?? SkillKind.SKILL,
+            skillSlug: dto.skillSlug ?? slugBase,
+            authorName: dto.authorName ?? dto.sourceName ?? '알콕 큐레이션',
+            license: dto.license ?? null,
+            repositoryUrl: dto.repositoryUrl ?? dto.sourceUrl,
+            sourceFileUrl: dto.sourceFileUrl ?? null,
+            executionVerification:
+              dto.executionVerification ?? SkillExecutionVerification.SOURCE_CHECKED,
+            difficulty: dto.difficulty ?? DifficultyLevel.PRACTICAL,
+            pricingModel: dto.pricingModel ?? PricingModel.FREE,
+            compatibleAgents: dto.compatibleAgents ?? [],
+            overview: dto.overview ?? dto.summary.trim(),
+            useCases: dto.useCases ?? [],
+            beforeAfter: (dto.beforeAfter ?? {
+              beforeItems: [],
+              afterItems: [],
+            }) as Prisma.InputJsonValue,
+            workflowSteps: (dto.workflowSteps ?? []) as Prisma.InputJsonValue,
+            prerequisites: (dto.prerequisites ?? []) as Prisma.InputJsonValue,
+            installPrompt: dto.installPrompt ?? null,
+            installGuides: (dto.installGuides ?? []) as Prisma.InputJsonValue,
+            examplePrompts: (dto.examplePrompts ?? []) as Prisma.InputJsonValue,
+            expectedOutputs: (dto.expectedOutputs ?? []) as Prisma.InputJsonValue,
+            postRunChecklist: dto.postRunChecklist ?? [],
+            tips: dto.tips ?? [],
+            cautions: dto.cautions ?? null,
+            faq: (dto.faq ?? []) as Prisma.InputJsonValue,
+            fileStructure: dto.fileStructure ?? [],
+            skillMdPreview: dto.skillMdPreview ?? null,
+            webAlternative: dto.webAlternative
+              ? (dto.webAlternative as Prisma.InputJsonValue)
+              : Prisma.JsonNull,
           },
         });
       }
@@ -252,6 +299,9 @@ export class AdminContentsRepository {
                   })),
                 }
               : {}),
+            ...(dto.verificationChecklist !== undefined
+              ? { verificationChecklist: dto.verificationChecklist }
+              : {}),
             ...(dto.cautions !== undefined ? { cautions: dto.cautions } : {}),
           },
         });
@@ -265,10 +315,21 @@ export class AdminContentsRepository {
             ...(dto.pricingModel !== undefined ? { pricingModel: dto.pricingModel } : {}),
             ...(dto.hasFreePlan !== undefined ? { hasFreePlan: dto.hasFreePlan } : {}),
             ...(dto.pricingSummary !== undefined ? { pricingSummary: dto.pricingSummary } : {}),
+            ...(dto.pricingPlans !== undefined
+              ? { pricingPlans: dto.pricingPlans as Prisma.InputJsonValue }
+              : {}),
             ...(dto.koreanSupport !== undefined ? { koreanSupport: dto.koreanSupport } : {}),
             ...(dto.platforms !== undefined ? { platforms: dto.platforms } : {}),
             ...(dto.strengths !== undefined ? { strengths: dto.strengths } : {}),
             ...(dto.limitations !== undefined ? { limitations: dto.limitations } : {}),
+            ...(dto.useCases !== undefined ? { useCases: dto.useCases } : {}),
+            ...(dto.gettingStartedSteps !== undefined
+              ? { gettingStartedSteps: dto.gettingStartedSteps as Prisma.InputJsonValue }
+              : {}),
+            ...(dto.examplePrompts !== undefined
+              ? { examplePrompts: dto.examplePrompts as Prisma.InputJsonValue }
+              : {}),
+            ...(dto.faq !== undefined ? { faq: dto.faq as Prisma.InputJsonValue } : {}),
           },
         });
       } else if (type === ContentType.NEWS) {
@@ -277,6 +338,58 @@ export class AdminContentsRepository {
           data: {
             ...(dto.keyPoints !== undefined ? { keyPoints: dto.keyPoints } : {}),
             ...(dto.workImpact !== undefined ? { workImpact: dto.workImpact } : {}),
+          },
+        });
+      } else if (type === ContentType.SKILL) {
+        await tx.skillDetail.updateMany({
+          where: { contentId: id },
+          data: {
+            ...(dto.skillKind !== undefined ? { skillKind: dto.skillKind } : {}),
+            ...(dto.skillSlug !== undefined ? { skillSlug: dto.skillSlug } : {}),
+            ...(dto.authorName !== undefined ? { authorName: dto.authorName } : {}),
+            ...(dto.license !== undefined ? { license: dto.license } : {}),
+            ...(dto.repositoryUrl !== undefined ? { repositoryUrl: dto.repositoryUrl } : {}),
+            ...(dto.sourceFileUrl !== undefined ? { sourceFileUrl: dto.sourceFileUrl } : {}),
+            ...(dto.executionVerification !== undefined
+              ? { executionVerification: dto.executionVerification }
+              : {}),
+            ...(dto.difficulty !== undefined ? { difficulty: dto.difficulty } : {}),
+            ...(dto.pricingModel !== undefined ? { pricingModel: dto.pricingModel } : {}),
+            ...(dto.compatibleAgents !== undefined
+              ? { compatibleAgents: dto.compatibleAgents }
+              : {}),
+            ...(dto.overview !== undefined ? { overview: dto.overview } : {}),
+            ...(dto.useCases !== undefined ? { useCases: dto.useCases } : {}),
+            ...(dto.beforeAfter !== undefined
+              ? { beforeAfter: dto.beforeAfter as Prisma.InputJsonValue }
+              : {}),
+            ...(dto.workflowSteps !== undefined
+              ? { workflowSteps: dto.workflowSteps as Prisma.InputJsonValue }
+              : {}),
+            ...(dto.prerequisites !== undefined
+              ? { prerequisites: dto.prerequisites as Prisma.InputJsonValue }
+              : {}),
+            ...(dto.installPrompt !== undefined ? { installPrompt: dto.installPrompt } : {}),
+            ...(dto.installGuides !== undefined
+              ? { installGuides: dto.installGuides as Prisma.InputJsonValue }
+              : {}),
+            ...(dto.examplePrompts !== undefined
+              ? { examplePrompts: dto.examplePrompts as Prisma.InputJsonValue }
+              : {}),
+            ...(dto.expectedOutputs !== undefined
+              ? { expectedOutputs: dto.expectedOutputs as Prisma.InputJsonValue }
+              : {}),
+            ...(dto.postRunChecklist !== undefined
+              ? { postRunChecklist: dto.postRunChecklist }
+              : {}),
+            ...(dto.tips !== undefined ? { tips: dto.tips } : {}),
+            ...(dto.cautions !== undefined ? { cautions: dto.cautions } : {}),
+            ...(dto.faq !== undefined ? { faq: dto.faq as Prisma.InputJsonValue } : {}),
+            ...(dto.fileStructure !== undefined ? { fileStructure: dto.fileStructure } : {}),
+            ...(dto.skillMdPreview !== undefined ? { skillMdPreview: dto.skillMdPreview } : {}),
+            ...(dto.webAlternative !== undefined
+              ? { webAlternative: dto.webAlternative as Prisma.InputJsonValue }
+              : {}),
           },
         });
       }

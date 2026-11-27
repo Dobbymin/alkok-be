@@ -25,12 +25,14 @@ export class MaintenanceBatchService {
 
   async runFreshnessCheck(now: Date = new Date()): Promise<{
     toolsFlagged: number;
+    skillsFlagged: number;
     guidesFlagged: number;
   }> {
     const toolCutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const skillCutoff = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
     const guideCutoff = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
 
-    const [toolRes, guideRes] = await this.prisma.$transaction([
+    const [toolRes, skillRes, guideRes] = await this.prisma.$transaction([
       this.prisma.content.updateMany({
         where: {
           type: ContentType.TOOL,
@@ -38,6 +40,16 @@ export class MaintenanceBatchService {
           verificationStatus: VerificationStatus.VALID,
           deletedAt: null,
           verifiedAt: { lt: toolCutoff },
+        },
+        data: { verificationStatus: VerificationStatus.NEEDS_REVIEW },
+      }),
+      this.prisma.content.updateMany({
+        where: {
+          type: ContentType.SKILL,
+          publishStatus: PublishStatus.PUBLISHED,
+          verificationStatus: VerificationStatus.VALID,
+          deletedAt: null,
+          verifiedAt: { lt: skillCutoff },
         },
         data: { verificationStatus: VerificationStatus.NEEDS_REVIEW },
       }),
@@ -53,8 +65,14 @@ export class MaintenanceBatchService {
       }),
     ]);
 
-    this.logger.log(`Freshness check flagged tools=${toolRes.count}, guides=${guideRes.count}`);
-    return { toolsFlagged: toolRes.count, guidesFlagged: guideRes.count };
+    this.logger.log(
+      `Freshness check flagged tools=${toolRes.count}, skills=${skillRes.count}, guides=${guideRes.count}`,
+    );
+    return {
+      toolsFlagged: toolRes.count,
+      skillsFlagged: skillRes.count,
+      guidesFlagged: guideRes.count,
+    };
   }
 
   async purgeOldRawText(now: Date = new Date()): Promise<{ purgedCount: number }> {

@@ -28,7 +28,8 @@ export class SearchVectorService {
             'simple',
             coalesce((SELECT gd.markdown_body FROM guide_details gd WHERE gd.content_id = c.id), '') || ' ' ||
             coalesce((SELECT array_to_string(td.strengths, ' ') FROM tool_details td WHERE td.content_id = c.id), '') || ' ' ||
-            coalesce((SELECT nd.work_impact FROM news_details nd WHERE nd.content_id = c.id), '')
+            coalesce((SELECT nd.work_impact FROM news_details nd WHERE nd.content_id = c.id), '') || ' ' ||
+            coalesce((SELECT sd.overview || ' ' || sd.skill_slug || ' ' || sd.author_name || ' ' || array_to_string(sd.compatible_agents, ' ') || ' ' || array_to_string(sd.use_cases, ' ') FROM skill_details sd WHERE sd.content_id = c.id), '')
           ),
           'C'
         )
